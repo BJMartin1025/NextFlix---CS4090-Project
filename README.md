@@ -10,7 +10,7 @@ To test the model logic, open the model.ipynb jupyter notebook under model and r
 To run the backend server, while in the backend\flask directory, run:
 python server.py
 
-To run the frontend server, while in the frontend directory, run the following with node.js installed:
+To run the frontend server, while in the frontend directory in a new terminal, run the following with node.js installed on your device:
 nmp install
 nmp start
 
