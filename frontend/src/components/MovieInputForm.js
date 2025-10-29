@@ -1,6 +1,6 @@
 // src/components/MovieInputForm.js
 import React, { useState } from 'react';
-import './MovieInputForm.css'; // For styling
+import '../styles/MovieInputForm.css'; // For styling
 
 function MovieInputForm({ onSubmit, loading }) {
   const [input, setInput] = useState('');

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import MovieInputForm from './components/MovieInputForm';
 import RecommendationList from './components/RecommendationList';
-import './App.css'; // For basic styling
+import './styles/App.css'; // For basic styling
 
 const FLASK_API_URL = 'http://localhost:3000/recommend'; // Adjust port if needed
 

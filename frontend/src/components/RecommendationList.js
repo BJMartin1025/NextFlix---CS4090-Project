@@ -1,7 +1,7 @@
 // src/components/RecommendationList.js
 import React, { useState } from 'react';
 import StarRating from './StarRating';
-import './RecommendationList.css'; // For styling
+import '../styles/RecommendationList.css'; // For styling
 
 function RecommendationList({ movieName, recommendations, onFeedbackSubmit }) {
   
