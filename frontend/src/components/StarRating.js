@@ -1,6 +1,6 @@
 // src/components/StarRating.js
 import React, { useState } from 'react';
-import './StarRating.css'; // For star colors/icons
+import '../styles/StarRating.css'; // For star colors/icons
 
 // Assuming you use 5 stars. You can use an icon library like react-icons or simple characters
 const MAX_RATING = 5;
