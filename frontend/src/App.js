@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import MovieInputForm from './components/MovieInputForm';
 import RecommendationList from './components/RecommendationList';
+import UserPreferenceInputForm from './components/UserPreferenceInputForm';
 import './styles/App.css'; // For basic styling
 
-const FLASK_API_URL = 'http://localhost:3000/recommend'; // Adjust port if needed
+const FLASK_API_URL = 'http://localhost:5000/recommend'; // Adjust port if needed
 
 function App() {
   const [movieName, setMovieName] = useState('');
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [view, setView] = useState('search');
 
   const handleRecommend = async (inputMovieName) => {
     setLoading(true);
@@ -45,7 +47,59 @@ function App() {
   // Function to handle user rating/feedback (placeholder for future implementation)
   const handleFeedback = (recommendedMovie, rating, feedbackText) => {
     console.log(`Feedback for ${recommendedMovie}: Rating ${rating}, Text: ${feedbackText}`);
-    // In a real application, you would send this to a separate Flask endpoint (e.g., /feedback)
+  };
+
+  // Function to handle user preference submission (placeholder)
+  const handlePreferenceSubmit = (preferences) => {
+    // For now, just log and switch back to the search view
+    console.log('User Preferences Submitted:', preferences);
+    alert("Preferences received! Engine tuning implementation pending.");
+    setView('search'); 
+  };
+
+  // Function to render the correct content based on the 'view' state
+  const renderContent = () => {
+    if (view === 'preferences') {
+      // Show the detailed form
+      return (
+        <UserPreferenceInputForm 
+          onSubmit={handlePreferenceSubmit} 
+          // FUNCTION FOR THE BACK BUTTON
+          onBackClick={() => setView('search')} 
+        />
+      );
+    }
+
+  return (
+      <div className="search-view-container">
+        {/* Existing MovieInputForm is rendered here */}
+        <MovieInputForm onSubmit={handleRecommend} loading={loading} />
+
+        <div className="preference-switch-area">
+          <p>— OR —</p>
+          {/* BUTTON TO CHANGE VIEW STATE */}
+          <button 
+            className="switch-to-pref-button" 
+            onClick={() => setView('preferences')}
+            disabled={loading}
+          >
+            Enter Detailed Preferences
+          </button>
+        </div>
+
+        {/* Loading, Error, and Recommendation List remain below the input area */}
+        {loading && <p>Generating recommendations...</p>}
+        {error && <p className="error-message">Error: {error}</p>}
+        
+        {recommendations.length > 0 && (
+          <RecommendationList 
+            movieName={movieName}
+            recommendations={recommendations} 
+            onFeedbackSubmit={handleFeedback}
+          />
+        )}
+      </div>
+    );
   };
 
   return (
@@ -54,18 +108,7 @@ function App() {
         <h1>Movie Recommender 🎬</h1>
       </header>
       
-      <MovieInputForm onSubmit={handleRecommend} loading={loading} />
-
-      {loading && <p>Generating recommendations...</p>}
-      {error && <p className="error-message">Error: {error}</p>}
-      
-      {recommendations.length > 0 && (
-        <RecommendationList 
-          movieName={movieName}
-          recommendations={recommendations} 
-          onFeedbackSubmit={handleFeedback}
-        />
-      )}
+      {renderContent()}
     </div>
   );
 }
