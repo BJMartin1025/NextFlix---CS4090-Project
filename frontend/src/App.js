@@ -3,7 +3,7 @@ import MovieInputForm from './components/MovieInputForm';
 import RecommendationList from './components/RecommendationList';
 import './styles/App.css'; // For basic styling
 
-const FLASK_API_URL = 'http://localhost:3000/recommend'; // Adjust port if needed
+const FLASK_API_URL = 'http://localhost:5000/recommend'; // Adjust port if needed
 
 function App() {
   const [movieName, setMovieName] = useState('');
