@@ -5,7 +5,7 @@
 This application is a course project for CS4090 at Missouri S&amp;T. NextFlix is a movie recommendation application which aims to deliver quick and efficient search results catered to the user's preferences, with transparency on what platforms the movie suggestions are available on. 
 
 **How to Run:**
-To test the model logic, open the model.ipynb jupyter notebook under model and run the cells sequentially. 
+To test the model logic, open the model.ipynb jupyter notebook under model and run the cells sequentially. Doing this will generate two .pkl files. Move these into the backend\flask folder before running the backend.
 
 To run the backend server, while in the backend\flask directory, run:
 python server.py
