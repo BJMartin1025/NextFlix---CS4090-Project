@@ -103,7 +103,7 @@ function App() {
   };
 
   return (
-    <div className="app-container">
+    <div className="app-container min-h-screen w-full">
       <header className="app-header">
         <h1>Movie Recommender 🎬</h1>
       </header>
