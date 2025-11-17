@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import MovieInputForm from './components/MovieInputForm';
 import RecommendationList from './components/RecommendationList';
-import './styles/App.css'; // For basic styling
-
-const FLASK_API_URL = 'http://localhost:5000/recommend'; // Adjust port if needed
+import './styles/App.css'; // For styling
 
 function App() {
   const [movieName, setMovieName] = useState('');
@@ -11,18 +9,16 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Updated handleRecommend for /similar backend (returns objects)
   const handleRecommend = async (inputMovieName) => {
     setLoading(true);
     setError(null);
-    setRecommendations([]); // Clear previous recommendations
-    
+    setRecommendations([]);
+
     try {
-      const response = await fetch(FLASK_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ movie_name: inputMovieName }),
+      const params = new URLSearchParams({ title: inputMovieName, top: 5 });
+      const response = await fetch(`http://localhost:5000/similar?${params.toString()}`, {
+        method: 'GET',
       });
 
       if (!response.ok) {
@@ -31,8 +27,9 @@ function App() {
       }
 
       const data = await response.json();
+      // Store full objects, not just titles
       setRecommendations(data.recommendations);
-      setMovieName(inputMovieName); // Store the movie that generated the list
+      setMovieName(inputMovieName);
 
     } catch (e) {
       setError(e.message);
@@ -42,10 +39,10 @@ function App() {
     }
   };
 
-  // Function to handle user rating/feedback (placeholder for future implementation)
+  // Feedback handler (works with RecommendationList)
   const handleFeedback = (recommendedMovie, rating, feedbackText) => {
     console.log(`Feedback for ${recommendedMovie}: Rating ${rating}, Text: ${feedbackText}`);
-    // In a real application, you would send this to a separate Flask endpoint (e.g., /feedback)
+    // Future: send to a Flask endpoint (e.g., /feedback)
   };
 
   return (
@@ -53,16 +50,16 @@ function App() {
       <header className="app-header">
         <h1>Movie Recommender 🎬</h1>
       </header>
-      
+
       <MovieInputForm onSubmit={handleRecommend} loading={loading} />
 
       {loading && <p>Generating recommendations...</p>}
       {error && <p className="error-message">Error: {error}</p>}
-      
+
       {recommendations.length > 0 && (
-        <RecommendationList 
+        <RecommendationList
           movieName={movieName}
-          recommendations={recommendations} 
+          recommendations={recommendations}
           onFeedbackSubmit={handleFeedback}
         />
       )}
