@@ -28,7 +28,7 @@ def recommend():
         # Attempt to find the movie index
         movie_index = final_data[final_data['movie_title'] == movie_name].index[0]
         distances = similarity[movie_index]
-        recommended_movies_list = sorted(list(enumerate(distances)), reverse=True, key=lambda x: x[1])[1:6]
+        recommended_movies_list = sorted(list(enumerate(distances)), reverse=True, key=lambda x: x[1])[1:11]
 
         # Prepare the recommendations
         recommendations = [final_data.iloc[i[0]].movie_title for i in recommended_movies_list]
