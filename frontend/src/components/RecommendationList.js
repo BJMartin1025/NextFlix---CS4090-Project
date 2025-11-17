@@ -1,68 +1,61 @@
 // src/components/RecommendationList.js
 import React, { useState } from 'react';
 import StarRating from './StarRating';
-import '../styles/RecommendationList.css'; // For styling
+import '../styles/RecommendationList.css';
 
 function RecommendationList({ movieName, recommendations, onFeedbackSubmit }) {
-  // Track which movie is selected to view details
-  const [selectedMovie, setSelectedMovie] = useState(null);
-  const [movieDetails, setMovieDetails] = useState(null);
-  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [feedback, setFeedback] = useState({});
 
-  // Local feedback state for currently viewed movie
-  const [localFeedback, setLocalFeedback] = useState({ rating: 0, text: '' });
-
-  const openMovie = async (movie) => {
-    setSelectedMovie(movie);
-    setMovieDetails(null);
-    setLocalFeedback({ rating: 0, text: '' });
-    setLoadingDetails(true);
-    try {
-      const res = await fetch('http://localhost:5000/movie?title=' + encodeURIComponent(movie));
-      if (!res.ok) {
-        setMovieDetails({ error: 'Details not found' });
-      } else {
-        const data = await res.json();
-        setMovieDetails(data.details || null);
-      }
-    } catch (err) {
-      console.error('Error fetching movie details', err);
-      setMovieDetails({ error: 'Error fetching details' });
-    } finally {
-      setLoadingDetails(false);
-    }
+  const handleRate = (movieTitle, rating) => {
+    setFeedback(prev => ({
+      ...prev,
+      [movieTitle]: { ...prev[movieTitle], rating: rating },
+    }));
   };
 
-  const closeDetails = () => {
-    setSelectedMovie(null);
-    setMovieDetails(null);
-    setLocalFeedback({ rating: 0, text: '' });
+  const handleFeedbackChange = (movieTitle, text) => {
+    setFeedback(prev => ({
+      ...prev,
+      [movieTitle]: { ...prev[movieTitle], text: text },
+    }));
   };
 
-  const handleRate = (rating) => {
-    setLocalFeedback(prev => ({ ...prev, rating }));
-  };
-
-  const handleFeedbackChange = (text) => {
-    setLocalFeedback(prev => ({ ...prev, text }));
-  };
-
-  const submitFeedback = () => {
-    if (!selectedMovie) return;
-    const { rating = 0, text = '' } = localFeedback;
-    onFeedbackSubmit(selectedMovie, rating, text);
-    alert(`Thank you for your feedback on "${selectedMovie}"!`);
-    // leave the details open; reset local feedback
-    setLocalFeedback({ rating: 0, text: '' });
+  const submitFeedback = (movieTitle) => {
+    const { rating = 0, text = '' } = feedback[movieTitle] || {};
+    onFeedbackSubmit(movieTitle, rating, text);
+    alert(`Thank you for your feedback on "${movieTitle}"!`);
   };
 
   return (
     <div className="recommendation-list">
       <h2>Top Recommendations for: {movieName}</h2>
-      <ul className="movie-list">
-        {recommendations.map((movie, index) => (
-          <li key={movie} className="movie-list-item">
-            <button className="movie-link" onClick={() => openMovie(movie)}>{index + 1}. {movie}</button>
+      <ul>
+        {recommendations.map((movieObj, index) => (
+          <li key={index} className="movie-card">
+            <div className="movie-details">
+              <p className="movie-title-rec">
+                {index + 1}. {movieObj.movie_title} 
+                {movieObj.score !== undefined && ` (Score: ${movieObj.score})`}
+              </p>
+              <p className="movie-director">Director: {movieObj.director_name}</p>
+              <p className="movie-genres">Genres: {movieObj.genres}</p>
+            </div>
+
+            <div className="feedback-section">
+              <StarRating onRate={(rating) => handleRate(movieObj.movie_title, rating)} />
+              <textarea
+                placeholder="Optional: Tell us what you thought..."
+                rows="2"
+                value={feedback[movieObj.movie_title]?.text || ''}
+                onChange={(e) => handleFeedbackChange(movieObj.movie_title, e.target.value)}
+              />
+              <button 
+                onClick={() => submitFeedback(movieObj.movie_title)}
+                className="feedback-button"
+              >
+                Submit Feedback
+              </button>
+            </div>
           </li>
         ))}
       </ul>

@@ -18,18 +18,16 @@ function App() {
   const [showA11y, setShowA11y] = useState(false);
   
 
+  // Updated handleRecommend for /similar backend (returns objects)
   const handleRecommend = async (inputMovieName) => {
     setLoading(true);
     setError(null);
-    setRecommendations([]); // Clear previous recommendations
-    
+    setRecommendations([]);
+
     try {
-      const response = await fetch(FLASK_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ movie_name: inputMovieName }),
+      const params = new URLSearchParams({ title: inputMovieName, top: 5 });
+      const response = await fetch(`http://localhost:5000/similar?${params.toString()}`, {
+        method: 'GET',
       });
 
       if (!response.ok) {
@@ -38,8 +36,9 @@ function App() {
       }
 
       const data = await response.json();
+      // Store full objects, not just titles
       setRecommendations(data.recommendations);
-      setMovieName(inputMovieName); // Store the movie that generated the list
+      setMovieName(inputMovieName);
 
     } catch (e) {
       setError(e.message);
@@ -76,7 +75,7 @@ function App() {
     }
   };
 
-  // Function to handle user rating/feedback (placeholder for future implementation)
+  // Feedback handler (works with RecommendationList)
   const handleFeedback = (recommendedMovie, rating, feedbackText) => {
     console.log(`Feedback for ${recommendedMovie}: Rating ${rating}, Text: ${feedbackText}`);
     // Send to backend and store under user's profile (uses persistent localStorage id)
@@ -141,6 +140,8 @@ function App() {
     if (view === 'report') {
       return <BugReportPage onBack={() => setView('search')} />;
     }
+    // In a real application, you would send this to a separate Flask endpoint (e.g., /feedback)
+  };
 
   return (
       <div className="search-view-container">
@@ -148,6 +149,12 @@ function App() {
           <div className="search-input-wrapper">
             <MovieInputForm onSubmit={handleRecommend} loading={loading} />
           </div>
+    <div className="app-container">
+      <header className="app-header">
+        <h1>Movie Recommender 🎬</h1>
+      </header>
+      
+      <MovieInputForm onSubmit={handleRecommend} loading={loading} />
 
           <div className="profile-area">
             <button onClick={() => setView('profile')} className="submit-button profile-button">My Profile</button>
@@ -193,6 +200,16 @@ function App() {
       
       {renderContent()}
       <AccessibilityMenu isOpen={showA11y} onClose={() => setShowA11y(false)} />
+      {loading && <p>Generating recommendations...</p>}
+      {error && <p className="error-message">Error: {error}</p>}
+      
+      {recommendations.length > 0 && (
+        <RecommendationList 
+          movieName={movieName}
+          recommendations={recommendations} 
+          onFeedbackSubmit={handleFeedback}
+        />
+      )}
     </div>
   );
 }

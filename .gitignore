@@ -1,3 +1,4 @@
 *.pkl
 node_modules/
 package-lock.json
+*.bak
