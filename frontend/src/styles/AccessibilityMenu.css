@@ -1,0 +1,56 @@
+.accessibility-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.accessibility-modal {
+  width: 420px;
+  max-width: calc(100% - 32px);
+  background: var(--modal-bg, #fff);
+  color: var(--modal-fg, #111);
+  border-radius: 10px;
+  padding: 18px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.accessibility-modal h2 {
+  margin-top: 0;
+}
+
+.access-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.access-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.access-controls button { padding: 8px 10px; }
+.access-controls button.active { background: #cc0000; color: #fff; border-radius: 6px; }
+.access-controls select { padding: 6px; border-radius: 6px; }
+
+.access-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+.btn { padding: 8px 12px; border-radius: 6px; background: #cc0000; color: #fff; border: none; cursor: pointer; }
+.btn.secondary { background: #666; }
+.btn.ghost { background: transparent; color: var(--modal-fg, #111); border: 1px solid #ccc; }
+
+/* Dark mode and high-contrast adjustments applied to body */
+body.dark-mode { background: #121212; color: #e6e6e6; }
+body.dark-mode .input-form-container { background: #1d1d1d; border-color: #333; }
+
+body.high-contrast { background: #000; color: #fff; }
+body.high-contrast .input-form-container { background: #000; border-color: #fff; }
+
+/* subtitles placeholder */
+body.subtitles-enabled .subtitle { font-size: var(--subtitle-size, 1.1rem); }
