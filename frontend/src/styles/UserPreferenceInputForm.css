@@ -1,0 +1,107 @@
+/* --- UserPreferenceInputForm.css --- */
+
+.input-form-container {
+    max-width: 600px;
+    margin: 40px auto;
+    padding: 30px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e0e0e0;
+}
+
+.input-form-container h2 {
+    color: #cc0000; 
+    text-align: center;
+    margin-bottom: 5px;
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.input-form-container p {
+    color: #666;
+    text-align: center;
+    margin-bottom: 25px;
+    font-size: 0.95rem;
+}
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+.input-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #333;
+    font-size: 1rem;
+}
+
+.input-group input[type="text"],
+.input-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    background-color: #f9f9f9;
+    resize: vertical;
+}
+
+.input-group textarea {
+    min-height: 90px;
+}
+
+.input-group input[type="text"]:focus,
+.input-group textarea:focus {
+    border-color: #cc0000;
+    box-shadow: 0 0 0 3px rgba(204, 0, 0, 0.2);
+    outline: none;
+}
+
+.submit-button {
+    display: block;
+    width: 100%;
+    padding: 15px;
+    border: none;
+    border-radius: 8px;
+    background-color: #cc0000;
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.1s;
+    margin-top: 25px;
+}
+
+.submit-button:hover {
+    background-color: #990000;
+}
+
+.submit-button:active {
+    transform: translateY(1px);
+}
+
+.back-button {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #cc0000; /* Red border */
+    border-radius: 8px;
+    background-color: transparent; /* Transparent background */
+    color: #cc0000; /* Red text */
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-top: 15px; /* Spacing from the submit button */
+}
+
+.back-button:hover {
+    background-color: rgba(204, 0, 0, 0.1); /* Light red hover effect */
+}
+
+.back-button:active {
+    transform: translateY(1px);
+}

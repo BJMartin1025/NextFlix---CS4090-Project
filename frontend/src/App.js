@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import MovieInputForm from './components/MovieInputForm';
 import RecommendationList from './components/RecommendationList';
-import './styles/App.css'; // For styling
+import './styles/App.css'; // For basic styling
+
+const FLASK_API_URL = 'http://localhost:5000/recommend'; // Adjust port if needed
 
 function App() {
   const [movieName, setMovieName] = useState('');
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [view, setView] = useState('search');
 
   // Updated handleRecommend for /similar backend (returns objects)
   const handleRecommend = async (inputMovieName) => {
@@ -42,7 +45,7 @@ function App() {
   // Feedback handler (works with RecommendationList)
   const handleFeedback = (recommendedMovie, rating, feedbackText) => {
     console.log(`Feedback for ${recommendedMovie}: Rating ${rating}, Text: ${feedbackText}`);
-    // Future: send to a Flask endpoint (e.g., /feedback)
+    // In a real application, you would send this to a separate Flask endpoint (e.g., /feedback)
   };
 
   return (
@@ -50,16 +53,16 @@ function App() {
       <header className="app-header">
         <h1>Movie Recommender 🎬</h1>
       </header>
-
+      
       <MovieInputForm onSubmit={handleRecommend} loading={loading} />
 
       {loading && <p>Generating recommendations...</p>}
       {error && <p className="error-message">Error: {error}</p>}
-
+      
       {recommendations.length > 0 && (
-        <RecommendationList
+        <RecommendationList 
           movieName={movieName}
-          recommendations={recommendations}
+          recommendations={recommendations} 
           onFeedbackSubmit={handleFeedback}
         />
       )}
