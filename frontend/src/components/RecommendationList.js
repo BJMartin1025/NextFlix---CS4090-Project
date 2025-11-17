@@ -1,59 +1,60 @@
 // src/components/RecommendationList.js
 import React, { useState } from 'react';
 import StarRating from './StarRating';
-import '../styles/RecommendationList.css'; // For styling
+import '../styles/RecommendationList.css';
 
 function RecommendationList({ movieName, recommendations, onFeedbackSubmit }) {
-  
-  // State to manage feedback for each recommended movie (optional but helpful)
   const [feedback, setFeedback] = useState({});
 
-  const handleRate = (movie, rating) => {
+  const handleRate = (movieTitle, rating) => {
     setFeedback(prev => ({
       ...prev,
-      [movie]: { ...prev[movie], rating: rating },
+      [movieTitle]: { ...prev[movieTitle], rating: rating },
     }));
   };
 
-  const handleFeedbackChange = (movie, text) => {
+  const handleFeedbackChange = (movieTitle, text) => {
     setFeedback(prev => ({
       ...prev,
-      [movie]: { ...prev[movie], text: text },
+      [movieTitle]: { ...prev[movieTitle], text: text },
     }));
   };
-  
-  const submitFeedback = (movie) => {
-      const { rating = 0, text = '' } = feedback[movie] || {};
-      onFeedbackSubmit(movie, rating, text);
-      alert(`Thank you for your feedback on "${movie}"!`);
-      // Optionally clear feedback for this movie:
-      // setFeedback(prev => { delete prev[movie]; return { ...prev }; }); 
+
+  const submitFeedback = (movieTitle) => {
+    const { rating = 0, text = '' } = feedback[movieTitle] || {};
+    onFeedbackSubmit(movieTitle, rating, text);
+    alert(`Thank you for your feedback on "${movieTitle}"!`);
   };
 
   return (
     <div className="recommendation-list">
-      <h2>Top Recommendations for: **{movieName}**</h2>
+      <h2>Top Recommendations for: {movieName}</h2>
       <ul>
-        {recommendations.map((movie, index) => (
+        {recommendations.map((movieObj, index) => (
           <li key={index} className="movie-card">
             <div className="movie-details">
-                <p className="movie-title-rec">{index + 1}. {movie}</p>
+              <p className="movie-title-rec">
+                {index + 1}. {movieObj.movie_title} 
+                {movieObj.score !== undefined && ` (Score: ${movieObj.score})`}
+              </p>
+              <p className="movie-director">Director: {movieObj.director_name}</p>
+              <p className="movie-genres">Genres: {movieObj.genres}</p>
             </div>
-            
+
             <div className="feedback-section">
-                <StarRating onRate={(rating) => handleRate(movie, rating)} />
-                <textarea
-                    placeholder="Optional: Tell us what you thought..."
-                    rows="2"
-                    value={feedback[movie]?.text || ''}
-                    onChange={(e) => handleFeedbackChange(movie, e.target.value)}
-                />
-                <button 
-                    onClick={() => submitFeedback(movie)}
-                    className="feedback-button"
-                >
-                    Submit Feedback
-                </button>
+              <StarRating onRate={(rating) => handleRate(movieObj.movie_title, rating)} />
+              <textarea
+                placeholder="Optional: Tell us what you thought..."
+                rows="2"
+                value={feedback[movieObj.movie_title]?.text || ''}
+                onChange={(e) => handleFeedbackChange(movieObj.movie_title, e.target.value)}
+              />
+              <button 
+                onClick={() => submitFeedback(movieObj.movie_title)}
+                className="feedback-button"
+              >
+                Submit Feedback
+              </button>
             </div>
           </li>
         ))}
