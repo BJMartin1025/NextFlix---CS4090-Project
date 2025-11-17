@@ -37,6 +37,30 @@
     font-size: 1rem;
 }
 
+/* Custom select container: ensure label sits above the select and the select is wide/tall for readability */
+.custom-select-container {
+    margin-bottom: 20px;
+}
+.custom-select-container label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+.custom-select-container select {
+    width: 100%;
+    min-height: 180px; /* taller box for multiple selection */
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+    background-color: #fafafa;
+}
+.custom-select-container select:focus {
+    border-color: #cc0000;
+    box-shadow: 0 0 0 3px rgba(204,0,0,0.12);
+    outline: none;
+}
+
 .input-group input[type="text"],
 .input-group textarea {
     width: 100%;

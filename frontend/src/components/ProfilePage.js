@@ -6,11 +6,15 @@ function ProfilePage({ onBack }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [preferences, setPreferences] = useState({
-    movies: '',
+    movies: [],
     genres: [],
-    directors: '',
-    actors: ''
+    directors: [],
+    actors: []
   });
+  const [options, setOptions] = useState({ movies: [], directors: [], actors: [], genres: [] });
+  const [movieInput, setMovieInput] = useState('');
+  const [directorInput, setDirectorInput] = useState('');
+  const [actorInput, setActorInput] = useState('');
   const [feedback, setFeedback] = useState([]);
 
   useEffect(() => {
@@ -22,6 +26,18 @@ function ProfilePage({ onBack }) {
     }
     setUserId(id);
     fetchProfile(id);
+    // fetch catalog options for constrained inputs
+    const fetchOptions = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/catalog/options');
+        if (!res.ok) return;
+        const data = await res.json();
+        setOptions(data);
+      } catch (err) {
+        console.error('Failed to load catalog options', err);
+      }
+    };
+    fetchOptions();
   }, []);
 
   const fetchProfile = async (id) => {
@@ -36,13 +52,13 @@ function ProfilePage({ onBack }) {
         const prefData = await prefRes.json();
         const prefs = prefData.preferences || {};
         setPreferences({
-          movies: (prefs.movies || []).join(', '),
+          movies: prefs.movies || [],
           genres: prefs.genres || [],
-          directors: (prefs.directors || []).join(', '),
-          actors: (prefs.actors || []).join(', '),
+          directors: prefs.directors || [],
+          actors: prefs.actors || [],
         });
       } else {
-        setPreferences({ movies: '', genres: [], directors: '', actors: '' });
+        setPreferences({ movies: [], genres: [], directors: [], actors: [] });
       }
 
       if (fbRes.ok) {
@@ -73,6 +89,49 @@ function ProfilePage({ onBack }) {
     return s.split(',').map(x => x.trim()).filter(Boolean);
   };
 
+  const addUnique = (arr, value) => {
+    if (!value) return arr;
+    const trimmed = value.trim();
+    if (!trimmed) return arr;
+    if (arr.find(a => a.toLowerCase() === trimmed.toLowerCase())) return arr;
+    return [...arr, trimmed];
+  };
+
+  const removeAt = (arr, idx) => arr.filter((_, i) => i !== idx);
+
+  const addMovie = () => {
+    if (!movieInput) return;
+    const match = options.movies.find(m => m.toLowerCase() === movieInput.trim().toLowerCase());
+    if (!match) {
+      alert('Please select a movie from the suggestions.');
+      return;
+    }
+    setPreferences(prev => ({ ...prev, movies: addUnique(prev.movies, match) }));
+    setMovieInput('');
+  };
+
+  const addDirector = () => {
+    if (!directorInput) return;
+    const match = options.directors.find(d => d.toLowerCase() === directorInput.trim().toLowerCase());
+    if (!match) {
+      alert('Please select a director from the suggestions.');
+      return;
+    }
+    setPreferences(prev => ({ ...prev, directors: addUnique(prev.directors, match) }));
+    setDirectorInput('');
+  };
+
+  const addActor = () => {
+    if (!actorInput) return;
+    const match = options.actors.find(a => a.toLowerCase() === actorInput.trim().toLowerCase());
+    if (!match) {
+      alert('Please select an actor from the suggestions.');
+      return;
+    }
+    setPreferences(prev => ({ ...prev, actors: addUnique(prev.actors, match) }));
+    setActorInput('');
+  };
+
   const handleSavePreferences = async (e) => {
     e.preventDefault();
     if (!userId) {
@@ -83,10 +142,10 @@ function ProfilePage({ onBack }) {
     const payload = {
       user_id: userId,
       preferences: {
-        movies: parseCsvToArray(preferences.movies),
+        movies: preferences.movies,
         genres: preferences.genres,
-        directors: parseCsvToArray(preferences.directors),
-        actors: parseCsvToArray(preferences.actors),
+        directors: preferences.directors,
+        actors: preferences.actors,
       }
     };
 
@@ -176,38 +235,96 @@ function ProfilePage({ onBack }) {
 
       <form onSubmit={handleSavePreferences}>
         <div className="input-group">
-          <label htmlFor="movies">Favorite Movies:</label>
-          <textarea id="movies" name="movies" value={preferences.movies} onChange={handleChange} rows="3" />
+          <label htmlFor="movieInput">Favorite Movies:</label>
+          <div className="inline-add">
+            <input
+              id="movieInput"
+              list="movies-datalist"
+              placeholder="Start typing and select a movie"
+              value={movieInput}
+              onChange={(e) => setMovieInput(e.target.value)}
+            />
+            <datalist id="movies-datalist">
+              {options.movies && options.movies.map((m, i) => (
+                <option key={i} value={m} />
+              ))}
+            </datalist>
+            <button type="button" onClick={addMovie} className="add-button">Add</button>
+          </div>
+
+          <div className="chips">
+            {preferences.movies.map((m, i) => (
+              <span key={i} className="chip">
+                {m}
+                <button type="button" className="chip-remove" onClick={() => setPreferences(prev => ({ ...prev, movies: removeAt(prev.movies, i) }))}>×</button>
+              </span>
+            ))}
+          </div>
         </div>
 
         <div className="custom-select-container">
           <label htmlFor="genres">Preferred Genres:</label>
           <select id="genres" name="genres" multiple value={preferences.genres} onChange={handleChange} className="h-48">
-            <option value="Action">Action</option>
-            <option value="Adventure">Adventure</option>
-            <option value="Animation">Animation</option>
-            <option value="Comedy">Comedy</option>
-            <option value="Crime">Crime</option>
-            <option value="Documentary">Documentary</option>
-            <option value="Drama">Drama</option>
-            <option value="Fantasy">Fantasy</option>
-            <option value="Horror">Horror</option>
-            <option value="Musical">Musical</option>
-            <option value="Mystery">Mystery</option>
-            <option value="Romance">Romance</option>
-            <option value="Sci-Fi">Sci-Fi</option>
-            <option value="Thriller">Thriller</option>
+            {options.genres && options.genres.map((g, idx) => (
+              <option key={idx} value={g}>{g}</option>
+            ))}
           </select>
         </div>
 
         <div className="input-group">
-          <label htmlFor="directors">Favorite Directors:</label>
-          <input id="directors" name="directors" type="text" value={preferences.directors} onChange={handleChange} />
+          <label htmlFor="directorInput">Favorite Directors:</label>
+          <div className="inline-add">
+            <input
+              id="directorInput"
+              list="directors-datalist"
+              placeholder="Type and select a director"
+              value={directorInput}
+              onChange={(e) => setDirectorInput(e.target.value)}
+            />
+            <datalist id="directors-datalist">
+              {options.directors && options.directors.map((d, i) => (
+                <option key={i} value={d} />
+              ))}
+            </datalist>
+            <button type="button" onClick={addDirector} className="add-button">Add</button>
+          </div>
+
+          <div className="chips">
+            {preferences.directors.map((d, i) => (
+              <span key={i} className="chip">
+                {d}
+                <button type="button" className="chip-remove" onClick={() => setPreferences(prev => ({ ...prev, directors: removeAt(prev.directors, i) }))}>×</button>
+              </span>
+            ))}
+          </div>
         </div>
 
         <div className="input-group">
-          <label htmlFor="actors">Favorite Actors/Actresses:</label>
-          <input id="actors" name="actors" type="text" value={preferences.actors} onChange={handleChange} />
+          <label htmlFor="actorInput">Favorite Actors/Actresses:</label>
+          <div className="inline-add">
+            <input
+              id="actorInput"
+              list="actors-datalist"
+              placeholder="Type and select an actor"
+              value={actorInput}
+              onChange={(e) => setActorInput(e.target.value)}
+            />
+            <datalist id="actors-datalist">
+              {options.actors && options.actors.map((a, i) => (
+                <option key={i} value={a} />
+              ))}
+            </datalist>
+            <button type="button" onClick={addActor} className="add-button">Add</button>
+          </div>
+
+          <div className="chips">
+            {preferences.actors.map((a, i) => (
+              <span key={i} className="chip">
+                {a}
+                <button type="button" className="chip-remove" onClick={() => setPreferences(prev => ({ ...prev, actors: removeAt(prev.actors, i) }))}>×</button>
+              </span>
+            ))}
+          </div>
         </div>
 
         <div style={{ display: 'flex', gap: '8px' }}>

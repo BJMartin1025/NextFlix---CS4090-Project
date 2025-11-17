@@ -57,3 +57,21 @@ html, body, #root {
     font-weight: bold;
     text-align: center;
 }
+
+.preference-action {
+    margin-top: 8px;
+    display: flex;
+    gap: 8px;
+    justify-content: flex-start;
+}
+
+.use-preferences-button {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.use-preferences-button:hover { opacity: 0.95; }

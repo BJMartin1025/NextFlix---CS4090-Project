@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import '../styles/AccessibilityMenu.css';
 
-function AccessibilityMenu({ isOpen, onClose }) {
+function AccessibilityMenu({ onClose, onBack }) {
   const defaultSettings = {
     fontSize: 'medium', // small, medium, large
     darkMode: false,
@@ -61,12 +61,9 @@ function AccessibilityMenu({ isOpen, onClose }) {
     try { localStorage.removeItem('nextflix_accessibility'); } catch (e) {}
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="accessibility-backdrop" role="dialog" aria-modal="true">
-      <div className="accessibility-modal">
-        <h2>Accessibility Settings</h2>
+    <div className="input-form-container accessibility-page">
+      <h2>Accessibility Settings</h2>
 
         <div className="access-row">
           <label>Font Size</label>
@@ -107,11 +104,10 @@ function AccessibilityMenu({ isOpen, onClose }) {
         </div>
 
         <div className="access-actions">
-          <button className="btn" onClick={handleSave}>Save</button>
+          <button className="submit-button" onClick={handleSave}>Save</button>
           <button className="btn secondary" onClick={handleReset}>Reset</button>
-          <button className="btn ghost" onClick={onClose}>Close</button>
+          <button className="back-button" onClick={() => { onClose && onClose(); onBack && onBack(); }}>← Back</button>
         </div>
-      </div>
     </div>
   );
 }

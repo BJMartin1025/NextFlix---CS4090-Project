@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import StarRating from './StarRating';
 import '../styles/RecommendationList.css';
 
-function RecommendationList({ movieName, recommendations, onFeedbackSubmit }) {
+function RecommendationList({ movieName, recommendations, onFeedbackSubmit, watchlist = [], onToggleWatchlist, onAddToFavorites, onMarkSeen }) {
   const [feedback, setFeedback] = useState({});
 
   const handleRate = (movieTitle, rating) => {
@@ -22,7 +22,11 @@ function RecommendationList({ movieName, recommendations, onFeedbackSubmit }) {
 
   const submitFeedback = (movieTitle) => {
     const { rating = 0, text = '' } = feedback[movieTitle] || {};
-    onFeedbackSubmit(movieTitle, rating, text);
+    if (onFeedbackSubmit) {
+      onFeedbackSubmit(movieTitle, rating, text);
+    } else {
+      console.warn('No onFeedbackSubmit handler provided');
+    }
     alert(`Thank you for your feedback on "${movieTitle}"!`);
   };
 
@@ -55,48 +59,22 @@ function RecommendationList({ movieName, recommendations, onFeedbackSubmit }) {
               >
                 Submit Feedback
               </button>
+              <div className="movie-actions">
+                {onToggleWatchlist && (
+                  <button
+                    className={`action-button ${watchlist.map(w=>w.toLowerCase()).includes((movieObj.movie_title||'').toLowerCase()) ? 'in-watchlist' : ''}`}
+                    onClick={() => onToggleWatchlist(movieObj.movie_title)}
+                  >
+                    {watchlist.map(w=>w.toLowerCase()).includes((movieObj.movie_title||'').toLowerCase()) ? '✔ In Watchlist' : '+ To Watchlist'}
+                  </button>
+                )}
+                <button className="action-button" onClick={() => onAddToFavorites && onAddToFavorites(movieObj.movie_title)}>★ Favorite</button>
+                <button className="action-button" onClick={() => onMarkSeen && onMarkSeen(movieObj.movie_title)}>✓ Mark Seen</button>
+              </div>
             </div>
           </li>
         ))}
       </ul>
-
-      {selectedMovie && (
-        <div className="movie-detail-panel">
-          <div className="panel-header">
-            <h3>{selectedMovie}</h3>
-            <button className="back-button" onClick={closeDetails}>Close</button>
-          </div>
-
-          {loadingDetails && <p>Loading details...</p>}
-
-          {movieDetails && movieDetails.error && <p>{movieDetails.error}</p>}
-
-          {movieDetails && !movieDetails.error && (
-            <div className="movie-info">
-              <p><strong>Director:</strong> {movieDetails.director_name || 'N/A'}</p>
-              <p><strong>Actors:</strong> {[
-                movieDetails.actor_1_name,
-                movieDetails.actor_2_name,
-                movieDetails.actor_3_name
-              ].filter(Boolean).join(', ') || 'N/A'}</p>
-              <p><strong>Genres:</strong> {movieDetails.genres || 'N/A'}</p>
-              {movieDetails.tags && <p><strong>Tags:</strong> {movieDetails.tags}</p>}
-            </div>
-          )}
-
-          <div className="feedback-section">
-            <h4>Your Rating & Feedback</h4>
-            <StarRating onRate={handleRate} />
-            <textarea
-              placeholder="Tell us what you thought..."
-              rows="3"
-              value={localFeedback.text}
-              onChange={(e) => handleFeedbackChange(e.target.value)}
-            />
-            <button onClick={submitFeedback} className="feedback-button">Submit Feedback</button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

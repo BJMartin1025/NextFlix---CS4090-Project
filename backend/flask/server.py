@@ -14,8 +14,8 @@ CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}})
 DATABASE = "movies.db"      # path to your sqlite database file
 MOVIES_TABLE = "movies_flat"
 
-# separators for genres/tags/actor fields (handles '|' , ',' , ';')
-SPLIT_RE = re.compile(r'\s*[|,;]\s*')
+# separators for genres/tags/actor fields (handles spaces, '|', ',', ';', '/', '&', and the word 'and')
+SPLIT_RE = re.compile(r'(?:\s+|[|,;/&]|\band\b)', re.IGNORECASE)
 
 # -----------------------
 # DB helpers
@@ -136,6 +136,16 @@ def similar():
     target_genres = split_field(target.get("genres", ""))
     target_tags = split_field(target.get("tags", ""))
 
+    # optional user_id parameter: exclude user's watchlist/seen from results
+    user_id_param = request.args.get('user_id')
+    user_watchlist = set()
+    user_seen = set()
+    if user_id_param:
+        u = user_profiles.get(user_id_param)
+        if u:
+            user_watchlist = set([m.lower().strip() for m in (u.get('watchlist') or [])])
+            user_seen = set([m.lower().strip() for m in (u.get('seen') or [])])
+
     # Build candidate SQL: any row that shares director, actor, genre, or tag.
     # We'll construct OR clauses for director equality, actor columns (LIKE), and genres/tags LIKE
     candidate_clauses = []
@@ -207,6 +217,10 @@ def similar():
 
     scored = []
     for c in candidates:
+        # skip if candidate is in user's watchlist or seen list
+        c_title = (c.get('movie_title') or '').strip().lower()
+        if c_title and (c_title in user_watchlist or c_title in user_seen):
+            continue
         sc = score_candidate(c)
         if sc > 0:
             c_with_score = dict(c)
@@ -224,6 +238,269 @@ def similar():
         "count_candidates": len(candidates),
         "recommendations": top_results
     })
+
+
+# -----------------------
+# Catalog options (movies, directors, actors, genres)
+# -----------------------
+@app.route('/catalog/options', methods=['GET'])
+def catalog_options():
+    db = get_db()
+    # movies
+    movies = [r[0] for r in db.execute(f"SELECT DISTINCT movie_title FROM {MOVIES_TABLE} WHERE movie_title IS NOT NULL").fetchall()]
+    # directors
+    directors = [r[0] for r in db.execute(f"SELECT DISTINCT director_name FROM {MOVIES_TABLE} WHERE director_name IS NOT NULL").fetchall()]
+    # actors (collect from actor_1/2/3)
+    actors = set()
+    for col in ('actor_1_name', 'actor_2_name', 'actor_3_name'):
+        rows = db.execute(f"SELECT DISTINCT {col} FROM {MOVIES_TABLE} WHERE {col} IS NOT NULL").fetchall()
+        for r in rows:
+            v = r[0]
+            if v:
+                actors.add(v)
+    # genres - split and unique
+    genres_set = set()
+    rows = db.execute(f"SELECT genres FROM {MOVIES_TABLE} WHERE genres IS NOT NULL").fetchall()
+    for r in rows:
+        val = r[0]
+        if val:
+            parts = SPLIT_RE.split(val)
+            for p in parts:
+                t = p.strip()
+                if t:
+                    genres_set.add(t)
+
+    return jsonify({
+        'movies': sorted(movies),
+        'directors': sorted([d for d in directors if d]),
+        'actors': sorted(list(actors)),
+        'genres': sorted(list(genres_set))
+    })
+
+
+# -----------------------
+# In-memory user/profile and reports storage (simple)
+# -----------------------
+user_profiles = {}
+bug_reports = []
+
+
+@app.route('/user/preferences', methods=['POST'])
+def save_preferences():
+    data = request.get_json() or {}
+    user_id = data.get('user_id')
+    prefs = data.get('preferences')
+    if not user_id or prefs is None:
+        return jsonify({'error': 'user_id and preferences required'}), 400
+    user = user_profiles.setdefault(user_id, {})
+    # Merge incoming preferences with existing ones (append, dedupe case-insensitive)
+    existing = user.get('preferences', {})
+
+    def merge_lists(old, new):
+        old_list = old or []
+        new_list = new or []
+        seen = {v.strip().lower(): v for v in old_list if v}
+        merged = list(old_list)[:]  # preserve existing order
+        for v in new_list:
+            if not v: 
+                continue
+            key = v.strip().lower()
+            if key not in seen:
+                merged.append(v)
+                seen[key] = v
+        return merged
+
+    merged_prefs = {
+        'movies': merge_lists(existing.get('movies'), prefs.get('movies')),
+        'genres': merge_lists(existing.get('genres'), prefs.get('genres')),
+        'directors': merge_lists(existing.get('directors'), prefs.get('directors')),
+        'actors': merge_lists(existing.get('actors'), prefs.get('actors')),
+    }
+
+    user['preferences'] = merged_prefs
+    return jsonify({'status': 'ok', 'user_id': user_id, 'preferences': merged_prefs})
+
+
+@app.route('/user/preferences/<user_id>', methods=['GET'])
+def get_preferences(user_id):
+    user = user_profiles.get(user_id, {})
+    return jsonify({'user_id': user_id, 'preferences': user.get('preferences', {})})
+
+
+@app.route('/user/feedback', methods=['POST'])
+def save_feedback():
+    data = request.get_json() or {}
+    user_id = data.get('user_id')
+    movie = data.get('movie')
+    rating = data.get('rating')
+    text = data.get('text')
+    entry = {'movie': movie, 'rating': rating, 'text': text}
+    if user_id:
+        user = user_profiles.setdefault(user_id, {})
+        fb = user.setdefault('feedback', [])
+        fb.append(entry)
+    else:
+        # anonymous feedback - append to global list under None
+        anon = user_profiles.setdefault('__anonymous__', {})
+        afb = anon.setdefault('feedback', [])
+        afb.append(entry)
+    return jsonify({'status': 'ok'})
+
+
+@app.route('/user/feedback/<user_id>', methods=['GET'])
+def get_feedback(user_id):
+    user = user_profiles.get(user_id, {})
+    return jsonify({'user_id': user_id, 'feedback': user.get('feedback', [])})
+
+
+@app.route('/user/watchlist', methods=['POST'])
+def add_watchlist():
+    data = request.get_json() or {}
+    user_id = data.get('user_id')
+    movie = data.get('movie')
+    if not user_id or not movie:
+        return jsonify({'error': 'user_id and movie required'}), 400
+    user = user_profiles.setdefault(user_id, {})
+    wl = user.setdefault('watchlist', [])
+    # dedupe case-insensitive
+    low = {m.strip().lower() for m in wl if m}
+    if movie.strip().lower() not in low:
+        wl.append(movie)
+    return jsonify({'status': 'ok', 'watchlist': wl})
+
+
+@app.route('/user/watchlist/remove', methods=['POST'])
+def remove_watchlist():
+    data = request.get_json() or {}
+    user_id = data.get('user_id')
+    movie = data.get('movie')
+    if not user_id or not movie:
+        return jsonify({'error': 'user_id and movie required'}), 400
+    user = user_profiles.setdefault(user_id, {})
+    wl = user.get('watchlist', [])
+    new_wl = [m for m in wl if m.strip().lower() != movie.strip().lower()]
+    user['watchlist'] = new_wl
+    return jsonify({'status': 'ok', 'watchlist': new_wl})
+
+
+@app.route('/user/watchlist/<user_id>', methods=['GET'])
+def get_watchlist(user_id):
+    user = user_profiles.get(user_id, {})
+    return jsonify({'user_id': user_id, 'watchlist': user.get('watchlist', [])})
+
+
+@app.route('/user/favorites', methods=['POST'])
+def add_favorite():
+    data = request.get_json() or {}
+    user_id = data.get('user_id')
+    movie = data.get('movie')
+    if not user_id or not movie:
+        return jsonify({'error': 'user_id and movie required'}), 400
+    user = user_profiles.setdefault(user_id, {})
+    # ensure preferences.movies contains it (merge)
+    prefs = user.setdefault('preferences', {})
+    movies = prefs.setdefault('movies', [])
+    low = {m.strip().lower() for m in movies if m}
+    if movie.strip().lower() not in low:
+        movies.append(movie)
+    favs = user.setdefault('favorites', [])
+    if movie.strip().lower() not in {f.strip().lower() for f in favs if f}:
+        favs.append(movie)
+    return jsonify({'status': 'ok', 'favorites': favs, 'preferences': prefs})
+
+
+@app.route('/user/seen', methods=['POST'])
+def mark_seen():
+    data = request.get_json() or {}
+    user_id = data.get('user_id')
+    movie = data.get('movie')
+    if not user_id or not movie:
+        return jsonify({'error': 'user_id and movie required'}), 400
+    user = user_profiles.setdefault(user_id, {})
+    seen = user.setdefault('seen', [])
+    low = {m.strip().lower() for m in seen if m}
+    if movie.strip().lower() not in low:
+        seen.append(movie)
+    # also remove from watchlist if present
+    wl = user.get('watchlist', [])
+    user['watchlist'] = [m for m in wl if m.strip().lower() != movie.strip().lower()]
+    return jsonify({'status': 'ok', 'seen': seen, 'watchlist': user.get('watchlist', [])})
+
+
+# -----------------------
+# Recommend from user preferences (POST) - returns list of titles
+# -----------------------
+@app.route('/recommend/user', methods=['POST'])
+def recommend_from_user():
+    data = request.get_json() or {}
+    user_id = data.get('user_id')
+    top_n = int(data.get('top_n', 10))
+    if not user_id:
+        return jsonify({'error': 'user_id required'}), 400
+    user = user_profiles.get(user_id)
+    if not user or 'preferences' not in user:
+        return jsonify({'error': 'No preferences found for user'}), 404
+    prefs = user['preferences']
+    pref_movies = set([m.lower().strip() for m in (prefs.get('movies') or [])])
+    pref_directors = set([d.lower().strip() for d in (prefs.get('directors') or [])])
+    pref_actors = set([a.lower().strip() for a in (prefs.get('actors') or [])])
+    pref_genres = set([g.lower().strip() for g in (prefs.get('genres') or [])])
+    pref_watchlist = set([w.lower().strip() for w in (user.get('watchlist') or [])])
+    pref_seen = set([s.lower().strip() for s in (user.get('seen') or [])])
+
+    db = get_db()
+    cur = db.execute(f"SELECT * FROM {MOVIES_TABLE}")
+    candidates = [row_to_dict(r) for r in cur.fetchall()]
+
+    def score_movie(m):
+        s = 0.0
+        title = (m.get('movie_title') or '').strip().lower()
+        if title in pref_movies:
+            s += 6.0
+        director = (m.get('director_name') or '').strip().lower()
+        if director and director in pref_directors:
+            s += 5.0
+        # actors
+        actors = set()
+        for col in ('actor_1_name', 'actor_2_name', 'actor_3_name'):
+            actors.update(split_field(m.get(col, '')))
+        s += 3.0 * len(actors.intersection(pref_actors))
+        # genres
+        genres = set(split_field(m.get('genres', '')))
+        s += 1.0 * len(genres.intersection(pref_genres))
+        return s
+
+    scored = []
+    for m in candidates:
+        title = (m.get('movie_title') or '').strip().lower()
+        # skip user's favorite movies, seen movies, and items on their watchlist
+        if title in pref_movies or title in pref_seen or title in pref_watchlist:
+            continue
+        sc = score_movie(m)
+        if sc > 0:
+            scored.append((sc, m.get('movie_title')))
+
+    scored_sorted = sorted(scored, key=lambda x: (-x[0], x[1] or ''))
+    titles = [t for _, t in scored_sorted[:top_n]]
+    return jsonify({'recommendations': titles})
+
+
+@app.route('/reports', methods=['POST'])
+def create_report():
+    data = request.get_json() or {}
+    report = {
+        'id': len(bug_reports) + 1,
+        'user_id': data.get('user_id'),
+        'subject': data.get('subject'),
+        'description': data.get('description')
+    }
+    bug_reports.append(report)
+    return jsonify({'status': 'ok', 'report': report})
+
+
+@app.route('/reports', methods=['GET'])
+def list_reports():
+    return jsonify({'reports': bug_reports})
 
 
 # -----------------------
@@ -253,384 +530,5 @@ def movie_details():
 def home():
     return {"message": "Recommendation backend (DB-based) running"}
 
-@app.route('/recommend', methods=['POST'])
-def recommend():
-    data = request.json
-    movie_name = data['movie_name'].strip().lower()
-
-    try:
-        # Attempt to find the movie index
-        movie_index = final_data[final_data['movie_title'] == movie_name].index[0]
-        distances = similarity[movie_index]
-        recommended_movies_list = sorted(list(enumerate(distances)), reverse=True, key=lambda x: x[1])[1:11]
-
-        # Prepare the recommendations
-        recommendations = [final_data.iloc[i[0]].movie_title for i in recommended_movies_list]
-
-        return jsonify({"recommendations": recommendations})
-    except IndexError:
-        # Add logging for debugging purposes
-        app.logger.error(f'Movie title "{movie_name}" not found in the dataset')
-        return jsonify({"error": "Movie title not found"}), 404
-    except Exception as e:
-        app.logger.error(f'An error occurred: {e}')
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route('/movie', methods=['GET'])
-def movie_details():
-    """Return details for a movie by title. Query param: title="..." (case-insensitive)"""
-    title = request.args.get('title', '')
-    if not title:
-        return jsonify({"error": "title query parameter required"}), 400
-    t = title.strip().lower()
-    try:
-        rows = final_data[final_data['movie_title'] == t]
-        if rows.empty:
-            return jsonify({"error": "movie not found"}), 404
-        row = rows.iloc[0]
-        details = {
-            'movie_title': row.get('movie_title'),
-            'director_name': row.get('director_name'),
-            'actor_1_name': row.get('actor_1_name'),
-            'actor_2_name': row.get('actor_2_name'),
-            'actor_3_name': row.get('actor_3_name'),
-            'genres': row.get('genres'),
-            'tags': row.get('tags') if 'tags' in row.index else None,
-        }
-        return jsonify({'details': details}), 200
-    except Exception as e:
-        app.logger.error(f'Error fetching movie details: {e}')
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route('/catalog/options', methods=['GET'])
-def catalog_options():
-    """Return lists of distinct movies, directors, actors, and genres from the CSV dataset."""
-    try:
-        movies = final_data['movie_title'].dropna().astype(str).str.strip().unique().tolist()
-        directors = final_data['director_name'].dropna().astype(str).str.strip().unique().tolist()
-
-        # actors: combine actor_1_name, actor_2_name, actor_3_name
-        actors = []
-        for col in ['actor_1_name', 'actor_2_name', 'actor_3_name']:
-            if col in final_data.columns:
-                vals = final_data[col].dropna().astype(str).str.strip().unique().tolist()
-                actors.extend(vals)
-        actors = sorted(list(set([a for a in actors if a and a.lower() != 'unknown'])))
-
-        # genres: split on common separators (|, comma, space) — the dataset uses space-separated multi-genres
-        genre_set = set()
-        if 'genres' in final_data.columns:
-            for g in final_data['genres'].dropna().astype(str):
-                # split on comma or pipe or slash, else on space
-                parts = []
-                if ',' in g:
-                    parts = [p.strip() for p in g.split(',')]
-                elif '|' in g:
-                    parts = [p.strip() for p in g.split('|')]
-                else:
-                    parts = [p.strip() for p in g.split()]
-                for p in parts:
-                    if p:
-                        genre_set.add(p)
-
-        genres = sorted(list(genre_set))
-
-        return jsonify({
-            'movies': sorted(movies),
-            'directors': sorted([d for d in directors if d and d.lower() != 'unknown']),
-            'actors': actors,
-            'genres': genres
-        }), 200
-    except Exception as e:
-        app.logger.error(f'Error building catalog options: {e}')
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route('/recommend/user', methods=['POST'])
-def recommend_for_user():
-    """Generate recommendations for a user based on their stored preferences.
-    Expected JSON: { "user_id": "...", "top_n": 10 }
-    Strategy:
-      - If user has favorite movies, average their similarity vectors.
-      - Apply simple attribute boosts for matching genres, directors, actors.
-    """
-    try:
-        data = request.json or {}
-        user_id = data.get('user_id')
-        top_n = int(data.get('top_n', 10))
-        if not user_id:
-            return jsonify({"error": "user_id required"}), 400
-
-        profile = user_profiles.get(user_id)
-        if not profile:
-            return jsonify({"error": "user profile not found"}), 404
-
-        prefs = {}
-        if isinstance(profile, dict) and 'preferences' in profile:
-            prefs = profile.get('preferences', {})
-        elif isinstance(profile, dict) and all(k in profile for k in ('movies', 'genres', 'directors', 'actors')):
-            prefs = {
-                'movies': profile.get('movies', []),
-                'genres': profile.get('genres', []),
-                'directors': profile.get('directors', []),
-                'actors': profile.get('actors', []),
-            }
-        else:
-            prefs = profile.get('preferences', {}) if isinstance(profile, dict) else {}
-
-        # Normalize preference lists to lowercase
-        pref_movies = [m.strip().lower() for m in prefs.get('movies', []) if m]
-        pref_genres = [g.strip().lower() for g in prefs.get('genres', []) if g]
-        pref_directors = [d.strip().lower() for d in prefs.get('directors', []) if d]
-        pref_actors = [a.strip().lower() for a in prefs.get('actors', []) if a]
-
-        if not (pref_movies or pref_genres or pref_directors or pref_actors):
-            return jsonify({"error": "no preferences found for user"}), 400
-
-        n = len(final_data)
-        combined_scores = np.zeros(n, dtype=float)
-
-        # Base score from favorite movies via similarity
-        base_scores = np.zeros(n, dtype=float)
-        count = 0
-        for m in pref_movies:
-            idxs = final_data[final_data['movie_title'] == m].index
-            if len(idxs) > 0:
-                idx = idxs[0]
-                try:
-                    base_scores += np.array(similarity[idx])
-                    count += 1
-                except Exception:
-                    pass
-
-        if count > 0:
-            base_scores = base_scores / float(count)
-            # normalize base_scores to 0..1
-            if base_scores.max() > base_scores.min():
-                bs_norm = (base_scores - base_scores.min()) / (base_scores.max() - base_scores.min())
-            else:
-                bs_norm = np.zeros_like(base_scores)
-        else:
-            bs_norm = np.zeros(n, dtype=float)
-
-        # Attribute boosts
-        boost = np.zeros(n, dtype=float)
-        for i, row in final_data.iterrows():
-            score = 0
-            # genres: row may be a string like 'Action Adventure'
-            row_genres = str(row.get('genres', '') or '').lower()
-            row_director = str(row.get('director_name', '') or '').strip().lower()
-            actors_concat = ' '.join([str(row.get('actor_1_name', '') or ''), str(row.get('actor_2_name', '') or ''), str(row.get('actor_3_name', '') or '')]).lower()
-
-            if pref_genres:
-                for g in pref_genres:
-                    if g and g in row_genres:
-                        score += 1
-                        break
-
-            if pref_directors:
-                for d in pref_directors:
-                    if d and d in row_director:
-                        score += 1
-                        break
-
-            if pref_actors:
-                for a in pref_actors:
-                    if a and a in actors_concat:
-                        score += 1
-                        break
-
-            boost[i] = score
-
-        # normalize boost to 0..1 (max possible 3)
-        if boost.max() > 0:
-            boost_norm = boost / max(boost.max(), 1.0)  # divides by max to scale to 0..1
-        else:
-            boost_norm = boost
-
-        # Combine normalized similarity and boosts. We weight them so base movie similarity is stronger when available.
-        combined = bs_norm * 0.8 + boost_norm * 0.4
-
-        # Remove any movies that are explicitly in the user's favorites (don't recommend exact same)
-        exclude = set(pref_movies)
-        scored = list(enumerate(combined))
-        scored = [s for s in scored if final_data.iloc[s[0]].movie_title not in exclude]
-
-        recommended = sorted(scored, reverse=True, key=lambda x: x[1])[:top_n]
-        recommendations = [final_data.iloc[i[0]].movie_title for i in recommended]
-
-        return jsonify({"recommendations": recommendations})
-    except Exception as e:
-        app.logger.error(f'Error generating user recommendations: {e}')
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route('/user/preferences', methods=['POST'])
-def save_preferences():
-    """Save or update a user's preferences in the in-memory store.
-    Expected JSON body: { "user_id": "string", "preferences": { ... } }
-    """
-    try:
-        data = request.json
-        user_id = data.get('user_id')
-        preferences = data.get('preferences')
-        if not user_id or preferences is None:
-            return jsonify({"error": "Missing user_id or preferences"}), 400
-
-        # Merge preferences into existing profile instead of overwriting.
-        # Normalize incoming structure to lists for the expected keys.
-        incoming = {
-            'movies': list(preferences.get('movies', [])) if isinstance(preferences.get('movies', []), (list, tuple)) else [],
-            'genres': list(preferences.get('genres', [])) if isinstance(preferences.get('genres', []), (list, tuple)) else [],
-            'directors': list(preferences.get('directors', [])) if isinstance(preferences.get('directors', []), (list, tuple)) else [],
-            'actors': list(preferences.get('actors', [])) if isinstance(preferences.get('actors', []), (list, tuple)) else [],
-        }
-
-        # Ensure profile dict exists
-        profile = user_profiles.setdefault(user_id, {})
-
-        # Existing preferences may previously have been stored directly as a dict (old format)
-        existing_prefs = {}
-        if isinstance(profile, dict) and 'preferences' in profile:
-            existing_prefs = profile.get('preferences', {})
-        elif isinstance(profile, dict) and all(k in profile for k in ('movies', 'genres', 'directors', 'actors')):
-            # older code may have stored preferences directly at profile
-            existing_prefs = {
-                'movies': profile.get('movies', []),
-                'genres': profile.get('genres', []),
-                'directors': profile.get('directors', []),
-                'actors': profile.get('actors', []),
-            }
-        else:
-            existing_prefs = profile.get('preferences', {}) if isinstance(profile, dict) else {}
-
-        # Helper to merge lists uniquely while preserving order
-        def merge_lists(old, new):
-            result = list(old) if isinstance(old, (list, tuple)) else []
-            for item in new:
-                if item and item not in result:
-                    result.append(item)
-            return result
-
-        merged = {
-            'movies': merge_lists(existing_prefs.get('movies', []), incoming['movies']),
-            'genres': merge_lists(existing_prefs.get('genres', []), incoming['genres']),
-            'directors': merge_lists(existing_prefs.get('directors', []), incoming['directors']),
-            'actors': merge_lists(existing_prefs.get('actors', []), incoming['actors']),
-        }
-
-        # Store under unified profile structure
-        profile['preferences'] = merged
-        user_profiles[user_id] = profile
-
-        return jsonify({"status": "saved", "user_id": user_id, "preferences": merged}), 200
-    except Exception as e:
-        app.logger.error(f'Error saving preferences: {e}')
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route('/user/preferences/<user_id>', methods=['GET'])
-def get_preferences(user_id):
-    """Retrieve stored preferences for a given user_id."""
-    profile = user_profiles.get(user_id)
-    if profile is None:
-        return jsonify({"error": "preferences not found"}), 404
-
-    # Support both new profile format (dict with 'preferences') and legacy direct preferences
-    if isinstance(profile, dict):
-        if 'preferences' in profile:
-            prefs = profile.get('preferences', {})
-        else:
-            # legacy support: profile might directly be the preferences dict
-            prefs = {
-                'movies': profile.get('movies', []),
-                'genres': profile.get('genres', []),
-                'directors': profile.get('directors', []),
-                'actors': profile.get('actors', []),
-            }
-    else:
-        prefs = profile
-
-    return jsonify({"user_id": user_id, "preferences": prefs}), 200
-
-
-@app.route('/user/feedback', methods=['POST'])
-def save_feedback():
-    """Save user feedback (rating + optional text) under the user's profile.
-    Expected JSON body: { "user_id": "string", "movie": "title", "rating": int, "text": "optional" }
-    """
-    try:
-        data = request.json
-        user_id = data.get('user_id')
-        movie = data.get('movie')
-        rating = data.get('rating')
-        text = data.get('text', '')
-
-        if not user_id or not movie or rating is None:
-            return jsonify({"error": "Missing user_id, movie, or rating"}), 400
-
-        # Ensure profile exists
-        profile = user_profiles.setdefault(user_id, {})
-
-        # Store feedback as a list of entries under 'feedback'
-        feedback_list = profile.setdefault('feedback', [])
-        entry = {
-            'movie': movie,
-            'rating': int(rating),
-            'text': text,
-        }
-        feedback_list.append(entry)
-
-        return jsonify({"status": "saved", "entry": entry}), 200
-    except Exception as e:
-        app.logger.error(f'Error saving feedback: {e}')
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route('/user/feedback/<user_id>', methods=['GET'])
-def get_feedback(user_id):
-    """Retrieve saved feedback entries for a user."""
-    profile = user_profiles.get(user_id)
-    if not profile or 'feedback' not in profile:
-        return jsonify({"feedback": []}), 200
-    return jsonify({"user_id": user_id, "feedback": profile['feedback']}), 200
-
-
-@app.route('/reports', methods=['POST'])
-def submit_report():
-    """Submit a bug/issue report. Expected JSON body: { user_id?, subject, description }
-    Stores in-memory under `bug_reports` with timestamp and an id.
-    """
-    try:
-        data = request.json or {}
-        subject = data.get('subject', '').strip()
-        description = data.get('description', '').strip()
-        user_id = data.get('user_id')
-
-        if not subject or not description:
-            return jsonify({"error": "subject and description are required"}), 400
-
-        import time, uuid
-        entry = {
-            'id': str(uuid.uuid4()),
-            'user_id': user_id,
-            'subject': subject,
-            'description': description,
-            'timestamp': int(time.time())
-        }
-        bug_reports.append(entry)
-        return jsonify({"status": "received", "report": entry}), 201
-    except Exception as e:
-        app.logger.error(f'Error submitting report: {e}')
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route('/reports', methods=['GET'])
-def list_reports():
-    """Return all submitted reports. (No auth for now; add admin protection later.)"""
-    return jsonify({"reports": bug_reports}), 200
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True)
