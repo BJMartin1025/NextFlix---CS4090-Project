@@ -12,16 +12,18 @@ function App() {
   const [error, setError] = useState(null);
   const [view, setView] = useState('search');
 
-  // Updated handleRecommend for /similar backend (returns objects)
   const handleRecommend = async (inputMovieName) => {
     setLoading(true);
     setError(null);
-    setRecommendations([]);
-
+    setRecommendations([]); // Clear previous recommendations
+    
     try {
-      const params = new URLSearchParams({ title: inputMovieName, top: 5 });
-      const response = await fetch(`http://localhost:5000/similar?${params.toString()}`, {
-        method: 'GET',
+      const response = await fetch(FLASK_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ movie_name: inputMovieName }),
       });
 
       if (!response.ok) {
@@ -30,9 +32,8 @@ function App() {
       }
 
       const data = await response.json();
-      // Store full objects, not just titles
       setRecommendations(data.recommendations);
-      setMovieName(inputMovieName);
+      setMovieName(inputMovieName); // Store the movie that generated the list
 
     } catch (e) {
       setError(e.message);
@@ -42,7 +43,7 @@ function App() {
     }
   };
 
-  // Feedback handler (works with RecommendationList)
+  // Function to handle user rating/feedback (placeholder for future implementation)
   const handleFeedback = (recommendedMovie, rating, feedbackText) => {
     console.log(`Feedback for ${recommendedMovie}: Rating ${rating}, Text: ${feedbackText}`);
     // In a real application, you would send this to a separate Flask endpoint (e.g., /feedback)
