@@ -34,3 +34,31 @@
     background-color: #a0c3e7;
     cursor: not-allowed;
 }
+.input-form select {
+    padding: 12px;               
+    font-size: 18px;             
+    border-radius: 6px;          
+    border: 1px solid #ddd;      
+    background-color: #007bff;   
+    color: white;               
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+
+.input-form select:hover:not(:disabled),
+.input-form select:focus {
+    background-color: #0056b3; 
+    outline: none;
+}
+
+.input-form select option {
+    color: #333;                 
+    background-color: white;     
+}
+
+.input-form .search-controls {
+    display: flex;
+    gap: 8px;                 
+    align-items: center;
+}

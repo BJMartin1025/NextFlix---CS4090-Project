@@ -530,5 +530,43 @@ def movie_details():
 def home():
     return {"message": "Recommendation backend (DB-based) running"}
 
+@app.route('/directors/movies', methods=['GET'])
+def director_movies():
+    """
+    Minimal director search:
+      GET /directors/movies?name=<director name>&limit=<n>
+
+    Returns:
+      { "director": "<input>", "count": N, "movies": [ {movie row}, ... ] }
+    Behavior:
+      - tries exact (normalized) match first, then partial LIKE match
+      - does not modify any existing data or endpoints
+    """
+    name_raw = (request.args.get('name') or '').strip()
+    if not name_raw:
+        return jsonify({'error': 'Missing "name" query parameter'}), 400
+
+    name_normalized = name_raw.lower()
+    limit = int(request.args.get('limit', 200))
+
+    db = get_db()
+
+    # 1) Try exact normalized match (fast & precise)
+    rows = db.execute(
+        f"SELECT * FROM {MOVIES_TABLE} WHERE LOWER(TRIM(director_name)) = ? LIMIT ?",
+        (name_normalized, limit)
+    ).fetchall()
+
+    # 2) If no exact match, try a partial match (case-insensitive)
+    if not rows:
+        rows = db.execute(
+            f"SELECT * FROM {MOVIES_TABLE} WHERE LOWER(director_name) LIKE ? LIMIT ?",
+            (f"%{name_normalized}%", limit)
+        ).fetchall()
+
+    movies = [row_to_dict(r) for r in rows]
+    return jsonify({'director': name_raw, 'count': len(movies), 'movies': movies})
+
+
 if __name__ == "__main__":
     app.run(debug=True)

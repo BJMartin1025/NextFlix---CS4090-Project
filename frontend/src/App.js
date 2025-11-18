@@ -35,34 +35,58 @@ function App() {
 
   // Main recommendation call: uses /similar GET which returns full objects.
   // Request top 10 results.
-  const handleRecommend = async (inputMovieName) => {
-    setLoading(true);
-    setError(null);
-    setRecommendations([]);
+const handleRecommend = async (query, searchType) => {
+  setLoading(true);
+  setError(null);
+  setRecommendations([]);
 
-    try {
-      const params = new URLSearchParams({ title: inputMovieName, top: recommendationCount });
-      const response = await fetch(`http://localhost:5000/similar?${params.toString()}`, {
-        method: 'GET',
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      // /similar returns objects with movie metadata and score
-      setRecommendations(data.recommendations || []);
-      setMovieName(inputMovieName);
-
-    } catch (e) {
-      setError(e.message);
-      console.error('Fetch error:', e);
-    } finally {
-      setLoading(false);
+  try {
+    const q = query.trim();
+    if (searchType === 'director') {
+      const url = `http://localhost:5000/search?director=${encodeURIComponent(q)}`;
+      const res = await fetch(url);
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Director search failed");
+      setRecommendations(json.results);
+      setMovieName(`Director: ${q}`);
+      return;
     }
-  };
+
+    if (searchType === 'actor') {
+      const url = `http://localhost:5000/search?actor=${encodeURIComponent(q)}`;
+      const res = await fetch(url);
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Actor search failed");
+      setRecommendations(json.results);
+      setMovieName(`Actor: ${q}`);
+      return;
+    }
+    if (searchType === 'genre') {
+      const url = `http://localhost:5000/search?genre=${encodeURIComponent(q)}`;
+      const res = await fetch(url);
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Genre search failed");
+      setRecommendations(json.results);
+      setMovieName(`Genre: ${q}`);
+      return;
+    }
+
+    const params = new URLSearchParams({ title: q, top: 5 });
+    const response = await fetch(`http://localhost:5000/similar?${params.toString()}`);
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Title search failed");
+
+    setRecommendations(data.recommendations);
+    setMovieName(q);
+
+  } catch (e) {
+    setError(e.message);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   // Recommend using stored user preferences
   const handleRecommendFromProfile = async () => {
