@@ -1,0 +1,76 @@
+.accessibility-page {
+  max-width: 720px;
+  margin: 24px auto;
+  background: var(--modal-bg, #fff);
+  color: var(--modal-fg, #111);
+  border-radius: 10px;
+  padding: 18px;
+}
+
+.accessibility-page h2 { margin-top: 0; }
+
+.access-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.access-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.access-controls button { padding: 8px 10px; }
+.access-controls button.active { background: #cc0000; color: #fff; border-radius: 6px; }
+.access-controls select { padding: 6px; border-radius: 6px; }
+
+.access-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+.btn { padding: 8px 12px; border-radius: 6px; background: #cc0000; color: #fff; border: none; cursor: pointer; }
+.btn.secondary { background: #666; }
+.btn.ghost { background: transparent; color: var(--modal-fg, #111); border: 1px solid #ccc; }
+
+/* Dark mode and high-contrast adjustments applied to body */
+body.dark-mode { background: #121212; color: #e6e6e6; }
+body.dark-mode .input-form-container { background: #1d1d1d; border-color: #333; }
+
+body.high-contrast { background: #000; color: #fff; }
+body.high-contrast .input-form-container { background: #000; border-color: #fff; }
+
+/* Ensure accessibility page is readable in dark-mode and high-contrast */
+body.dark-mode .accessibility-page {
+  background: #1b1b1b;
+  color: #e6e6e6;
+  border: 1px solid #2e2e2e;
+}
+
+body.dark-mode .accessibility-page .access-row,
+body.dark-mode .accessibility-page .access-controls {
+  color: #e6e6e6;
+}
+
+body.dark-mode .access-controls button {
+  background: #2b2b2b;
+  color: #e6e6e6;
+  border: 1px solid #444;
+}
+
+body.dark-mode .access-controls select,
+body.dark-mode .access-controls input {
+  background: #222;
+  color: #e6e6e6;
+  border: 1px solid #444;
+}
+
+body.dark-mode .btn.ghost { color: #e6e6e6; border-color: #555; }
+
+body.high-contrast .accessibility-page {
+  background: #000;
+  color: #fff;
+  border: 1px solid #fff;
+}
+
+/* subtitles placeholder */
+body.subtitles-enabled .subtitle { font-size: var(--subtitle-size, 1.1rem); }

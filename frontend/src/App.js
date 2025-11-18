@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import MovieInputForm from './components/MovieInputForm';
 import RecommendationList from './components/RecommendationList';
+import UserPreferenceInputForm from './components/UserPreferenceInputForm';
+import ProfilePage from './components/ProfilePage';
+import BugReportPage from './components/BugReportPage';
+import AccessibilityMenu from './components/AccessibilityMenu';
+import ToWatchList from './components/ToWatchList';
 import './styles/App.css'; // For basic styling
-
-const FLASK_API_URL = 'http://localhost:5000/recommend'; // Adjust port if needed
 
 function App() {
   const [movieName, setMovieName] = useState('');
@@ -11,61 +14,275 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [view, setView] = useState('search');
+  const [userWatchlist, setUserWatchlist] = useState([]);
+  const [recommendationCount, setRecommendationCount] = useState(10);
 
-  const handleRecommend = async (inputMovieName) => {
+  useEffect(() => {
+    // fetch current user's watchlist on mount
+    const fetchWatchlist = async () => {
+      const userId = localStorage.getItem('nextflix_user_id');
+      if (!userId) { setUserWatchlist([]); return; }
+      try {
+        const res = await fetch(`http://localhost:5000/user/watchlist/${userId}`);
+        if (res.ok) {
+          const d = await res.json();
+          setUserWatchlist(d.watchlist || []);
+        }
+      } catch (e) { console.warn('Failed to fetch watchlist', e); }
+    };
+    fetchWatchlist();
+  }, []);
+
+  // Main recommendation call: uses /similar GET which returns full objects.
+  // Request top 10 results.
+const handleRecommend = async (query, searchType) => {
+  setLoading(true);
+  setError(null);
+  setRecommendations([]);
+
+  try {
+    const q = query.trim();
+    if (searchType === 'director') {
+      const url = `http://localhost:5000/search?director=${encodeURIComponent(q)}`;
+      const res = await fetch(url);
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Director search failed");
+      setRecommendations(json.results);
+      setMovieName(`Director: ${q}`);
+      return;
+    }
+
+    if (searchType === 'actor') {
+      const url = `http://localhost:5000/search?actor=${encodeURIComponent(q)}`;
+      const res = await fetch(url);
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Actor search failed");
+      setRecommendations(json.results);
+      setMovieName(`Actor: ${q}`);
+      return;
+    }
+    if (searchType === 'genre') {
+      const url = `http://localhost:5000/search?genre=${encodeURIComponent(q)}`;
+      const res = await fetch(url);
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Genre search failed");
+      setRecommendations(json.results);
+      setMovieName(`Genre: ${q}`);
+      return;
+    }
+
+    const params = new URLSearchParams({ title: q, top: 5 });
+    const response = await fetch(`http://localhost:5000/similar?${params.toString()}`);
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Title search failed");
+
+    setRecommendations(data.recommendations);
+    setMovieName(q);
+
+  } catch (e) {
+    setError(e.message);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+  // Recommend using stored user preferences
+  const handleRecommendFromProfile = async () => {
+    const userId = localStorage.getItem('nextflix_user_id');
+    if (!userId) return alert('No user profile found. Please save preferences first.');
     setLoading(true);
     setError(null);
-    setRecommendations([]); // Clear previous recommendations
-    
+    setRecommendations([]);
     try {
-      const response = await fetch(FLASK_API_URL, {
+      const res = await fetch('http://localhost:5000/recommend/user', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ movie_name: inputMovieName }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId, top_n: recommendationCount })
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || `HTTP ${res.status}`);
       }
-
-      const data = await response.json();
-      setRecommendations(data.recommendations);
-      setMovieName(inputMovieName); // Store the movie that generated the list
-
-    } catch (e) {
-      setError(e.message);
-      console.error('Fetch error:', e);
+      const d = await res.json();
+      // backend returns a list of titles; fetch details for each to show consistent objects
+      const titles = d.recommendations || [];
+      const detailed = [];
+      for (const t of titles.slice(0, recommendationCount)) {
+        try {
+          const mres = await fetch(`http://localhost:5000/movie?title=${encodeURIComponent(t)}`);
+          if (mres.ok) {
+            const md = await mres.json();
+            // server returns either {details: {...}} or full row
+            detailed.push(md.details || md);
+          }
+        } catch (err) {
+          console.warn('Failed to fetch movie details for', t, err);
+        }
+      }
+      setRecommendations(detailed);
+      setMovieName('From My Preferences');
+    } catch (err) {
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // Function to handle user rating/feedback (placeholder for future implementation)
-  const handleFeedback = (recommendedMovie, rating, feedbackText) => {
-    console.log(`Feedback for ${recommendedMovie}: Rating ${rating}, Text: ${feedbackText}`);
-    // In a real application, you would send this to a separate Flask endpoint (e.g., /feedback)
+  // Feedback handler: POST to backend /user/feedback
+  const handleFeedback = async (recommendedMovie, rating, feedbackText) => {
+    try {
+      const userId = localStorage.getItem('nextflix_user_id') || null;
+      const payload = { user_id: userId, movie: recommendedMovie, rating, text: feedbackText };
+      const res = await fetch('http://localhost:5000/user/feedback', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+      });
+      if (!res.ok) {
+        console.error('Failed to submit feedback', await res.text());
+      }
+    } catch (e) {
+      console.error('Error sending feedback', e);
+    }
   };
+
+  const addToWatchlist = async (movieTitle) => {
+    const userId = localStorage.getItem('nextflix_user_id');
+    if (!userId) return alert('No user profile found.');
+    try {
+      const res = await fetch('http://localhost:5000/user/watchlist', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: userId, movie: movieTitle })
+      });
+      if (res.ok) {
+        alert(`Added "${movieTitle}" to your to-watch list.`);
+        // remove movie from current recommendations view so it no longer appears
+        setRecommendations(prev => prev.filter(m => (m.movie_title || '').trim().toLowerCase() !== (movieTitle || '').trim().toLowerCase()));
+        // update local watchlist state
+        setUserWatchlist(prev => {
+          const low = new Set(prev.map(p => p.trim().toLowerCase()));
+          if (!low.has(movieTitle.trim().toLowerCase())) return [...prev, movieTitle];
+          return prev;
+        });
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  const removeFromWatchlist = async (movieTitle) => {
+    const userId = localStorage.getItem('nextflix_user_id');
+    if (!userId) return alert('No user profile found.');
+    try {
+      const res = await fetch('http://localhost:5000/user/watchlist/remove', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: userId, movie: movieTitle })
+      });
+      if (res.ok) {
+        setUserWatchlist(prev => prev.filter(m => m.trim().toLowerCase() !== movieTitle.trim().toLowerCase()));
+        // optionally re-fetch recommendations or leave as-is
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  const toggleWatchlist = async (movieTitle) => {
+    const exists = userWatchlist.map(m => m.trim().toLowerCase()).includes((movieTitle||'').trim().toLowerCase());
+    if (exists) {
+      await removeFromWatchlist(movieTitle);
+      alert(`Removed "${movieTitle}" from your to-watch list.`);
+    } else {
+      await addToWatchlist(movieTitle);
+    }
+  };
+
+  const addToFavorites = async (movieTitle) => {
+    const userId = localStorage.getItem('nextflix_user_id');
+    if (!userId) return alert('No user profile found.');
+    try {
+      const res = await fetch('http://localhost:5000/user/favorites', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: userId, movie: movieTitle })
+      });
+      if (res.ok) {
+        alert(`Added "${movieTitle}" to your favorites.`);
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  const markAsSeen = async (movieTitle) => {
+    const userId = localStorage.getItem('nextflix_user_id');
+    if (!userId) return alert('No user profile found.');
+    try {
+      const res = await fetch('http://localhost:5000/user/seen', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: userId, movie: movieTitle })
+      });
+      if (res.ok) {
+        alert(`Marked "${movieTitle}" as seen.`);
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  const openPreferences = () => setView('preferences');
+  const openProfile = () => setView('profile');
+  const openReport = () => setView('report');
+  const backToSearch = () => setView('search');
 
   return (
     <div className="app-container">
       <header className="app-header">
-        <h1>Movie Recommender 🎬</h1>
+        <h1>NextFlix: A Movie Recommendation App 🎬</h1>
+        <div className="header-actions">
+          <button aria-label="Home" onClick={() => setView('search')} className="profile-button">Home</button>
+          <button aria-label="My Profile" onClick={openProfile} className="profile-button">My Profile</button>
+          <button aria-label="To-Watch" onClick={() => setView('watchlist')} className="profile-button">To-Watch</button>
+          <button aria-label="Preferences" onClick={openPreferences} className="profile-button">Preferences</button>
+          <button aria-label="Accessibility settings" onClick={() => setView('accessibility')} className="profile-button">Accessibility</button>
+          <button aria-label="Report Bug" onClick={openReport} className="profile-button">Report Bug</button>
+        </div>
       </header>
-      
-      <MovieInputForm onSubmit={handleRecommend} loading={loading} />
 
-      {loading && <p>Generating recommendations...</p>}
-      {error && <p className="error-message">Error: {error}</p>}
-      
-      {recommendations.length > 0 && (
-        <RecommendationList 
-          movieName={movieName}
-          recommendations={recommendations} 
-          onFeedbackSubmit={handleFeedback}
-        />
+
+      {view === 'search' && (
+        <>
+          <MovieInputForm onSubmit={handleRecommend} loading={loading} />
+
+          <div className="recommendation-count-control" style={{ margin: '8px 0' }}>
+            <label htmlFor="recommendationCount" style={{ marginRight: 8 }}>Number of recommendations:</label>
+            <input id="recommendationCount" type="number" min={1} max={50} value={recommendationCount} onChange={e => setRecommendationCount(Number(e.target.value) || 1)} style={{ width: 80 }} />
+          </div>
+
+          <div className="preference-action">
+            <button onClick={handleRecommendFromProfile} className="use-preferences-button">Use My Preferences</button>
+          </div>
+
+          {loading && <p>Generating recommendations...</p>}
+          {error && <p className="error-message">Error: {error}</p>}
+
+          {recommendations.length > 0 && (
+            <RecommendationList 
+              movieName={movieName}
+              recommendations={recommendations} 
+              onFeedbackSubmit={handleFeedback}
+              watchlist={userWatchlist}
+              onToggleWatchlist={toggleWatchlist}
+              onAddToFavorites={addToFavorites}
+              onMarkSeen={markAsSeen}
+            />
+          )}
+        </>
+      )}
+
+      {view === 'preferences' && (
+        <UserPreferenceInputForm onBackClick={backToSearch} />
+      )}
+
+      {view === 'profile' && (
+        <ProfilePage onBack={backToSearch} />
+      )}
+
+      {view === 'report' && (
+        <BugReportPage onBack={backToSearch} />
+      )}
+      {view === 'accessibility' && (
+        <AccessibilityMenu onClose={backToSearch} onBack={backToSearch} />
+      )}
+      {view === 'watchlist' && (
+        <ToWatchList onBack={backToSearch} onFeedbackSubmit={handleFeedback} onAddToFavorites={addToFavorites} onMarkSeen={markAsSeen} watchlist={userWatchlist} onToggleWatchlist={toggleWatchlist} />
       )}
     </div>
   );

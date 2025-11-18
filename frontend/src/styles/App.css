@@ -1,8 +1,14 @@
 .app-container {
-    max-width: 800px;
+    max-width: 900px;
     margin: 0 auto;
-    padding: 20px;
+    padding: 22px 18px;
     font-family: Arial, sans-serif;
+}
+
+/* Make font readable and layout comfortable */
+html, body, #root {
+    height: 100%;
+    font-size: 22px; /* larger base font so UI appears zoomed-in */
 }
 
 .app-header {
@@ -13,8 +19,59 @@
     margin-bottom: 20px;
 }
 
+.search-view-container {
+    display: block;
+}
+
+.search-view-top {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    justify-content: space-between;
+}
+
+.search-input-wrapper {
+    flex: 1 1 auto;
+}
+
+.profile-area {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
+    min-width: 160px;
+}
+
+.profile-button {
+    padding: 10px 14px;
+    font-size: 16px;
+    border-radius: 8px;
+}
+
+.preference-switch-area {
+    text-align: right;
+}
+
 .error-message {
     color: red;
     font-weight: bold;
     text-align: center;
 }
+
+.preference-action {
+    margin-top: 8px;
+    display: flex;
+    gap: 8px;
+    justify-content: flex-start;
+}
+
+.use-preferences-button {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.use-preferences-button:hover { opacity: 0.95; }

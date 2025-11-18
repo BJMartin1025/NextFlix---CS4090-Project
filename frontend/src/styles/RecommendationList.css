@@ -48,3 +48,53 @@
 .feedback-button:hover {
     background-color: #1e7e34;
 }
+
+.movie-actions {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+}
+
+.action-button {
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    background: #fff;
+    cursor: pointer;
+}
+
+.action-button:hover { background: #f0f0f0 }
+
+/* Dark-mode readability fixes */
+body.dark-mode .movie-card {
+    background-color: #1e1f22;
+    border-left-color: #3b82f6;
+    box-shadow: none;
+}
+
+body.dark-mode .movie-title-rec,
+body.dark-mode .movie-director,
+body.dark-mode .movie-genres {
+    color: #e6e6e6;
+}
+
+body.dark-mode .feedback-section textarea {
+    background-color: #2a2a2a;
+    color: #e6e6e6;
+    border-color: #444;
+}
+
+body.dark-mode .feedback-button { background-color: #1f8a3a }
+body.dark-mode .feedback-button:hover { background-color: #17662b }
+
+body.dark-mode .action-button { background: #2a2a2a; border-color: #444; color: #e6e6e6 }
+
+.action-button.in-watchlist {
+    background: #e6f7ff;
+    border-color: #7cc4ff;
+}
+
+body.dark-mode .action-button.in-watchlist {
+    background: #13324a;
+    border-color: #1f6fb3;
+}

@@ -1,41 +1,32 @@
-import React, { useState, useEffect } from 'react';
-// CORRECT PATH: Go up one level (to src), then into the styles folder
+import React, { useEffect, useState } from 'react';
 import '../styles/UserPreferenceInputForm.css';
 
-/**
- * A form for users to input their movie preferences, including
- * favorite movies, genres, directors, and actors.
- * @param {object} props - Component props
- * @param {function} props.onBackClick - Function to handle navigation back (e.g., hiding the form).
- */
-function UserPreferenceInputForm({ onBackClick }) {
+function ProfilePage({ onBack }) {
+  const [userId, setUserId] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [preferences, setPreferences] = useState({
     movies: [],
     genres: [],
     directors: [],
-    actors: [],
+    actors: []
   });
   const [options, setOptions] = useState({ movies: [], directors: [], actors: [], genres: [] });
-
-  // temporary inputs for adding single items
   const [movieInput, setMovieInput] = useState('');
   const [directorInput, setDirectorInput] = useState('');
   const [actorInput, setActorInput] = useState('');
-  const [userId, setUserId] = useState(null);
-  const [saving, setSaving] = useState(false);
+  const [feedback, setFeedback] = useState([]);
 
   useEffect(() => {
-    // Ensure a persistent user id exists for tying preferences to a profile
-    let id = localStorage.getItem('nextflix_user_id');
+    const id = localStorage.getItem('nextflix_user_id');
     if (!id) {
-      id = 'user_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
-      localStorage.setItem('nextflix_user_id', id);
+      setLoading(false);
+      setUserId(null);
+      return;
     }
     setUserId(id);
-  }, []);
-
-  useEffect(() => {
-    // fetch available options (movies, directors, actors, genres) from backend CSV
+    fetchProfile(id);
+    // fetch catalog options for constrained inputs
     const fetchOptions = async () => {
       try {
         const res = await fetch('http://localhost:5000/catalog/options');
@@ -48,6 +39,40 @@ function UserPreferenceInputForm({ onBackClick }) {
     };
     fetchOptions();
   }, []);
+
+  const fetchProfile = async (id) => {
+    setLoading(true);
+    try {
+      const [prefRes, fbRes] = await Promise.all([
+        fetch(`http://localhost:5000/user/preferences/${id}`),
+        fetch(`http://localhost:5000/user/feedback/${id}`),
+      ]);
+
+      if (prefRes.ok) {
+        const prefData = await prefRes.json();
+        const prefs = prefData.preferences || {};
+        setPreferences({
+          movies: prefs.movies || [],
+          genres: prefs.genres || [],
+          directors: prefs.directors || [],
+          actors: prefs.actors || [],
+        });
+      } else {
+        setPreferences({ movies: [], genres: [], directors: [], actors: [] });
+      }
+
+      if (fbRes.ok) {
+        const fbData = await fbRes.json();
+        setFeedback(fbData.feedback || []);
+      } else {
+        setFeedback([]);
+      }
+    } catch (err) {
+      console.error('Error fetching profile:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value, multiple, options } = e.target;
@@ -75,7 +100,6 @@ function UserPreferenceInputForm({ onBackClick }) {
   const removeAt = (arr, idx) => arr.filter((_, i) => i !== idx);
 
   const addMovie = () => {
-    // only allow if the input matches an available movie (exact match ignoring case)
     if (!movieInput) return;
     const match = options.movies.find(m => m.toLowerCase() === movieInput.trim().toLowerCase());
     if (!match) {
@@ -108,8 +132,12 @@ function UserPreferenceInputForm({ onBackClick }) {
     setActorInput('');
   };
 
-  const handleSubmit = async (e) => {
+  const handleSavePreferences = async (e) => {
     e.preventDefault();
+    if (!userId) {
+      alert('No user profile found in this browser. Preferences cannot be saved.');
+      return;
+    }
 
     const payload = {
       user_id: userId,
@@ -117,11 +145,10 @@ function UserPreferenceInputForm({ onBackClick }) {
         movies: preferences.movies,
         genres: preferences.genres,
         directors: preferences.directors,
-        actors: preferences.actors
+        actors: preferences.actors,
       }
     };
 
-    console.log('Submitting Preferences:', payload);
     setSaving(true);
     try {
       const res = await fetch('http://localhost:5000/user/preferences', {
@@ -132,26 +159,81 @@ function UserPreferenceInputForm({ onBackClick }) {
       const data = await res.json();
       if (!res.ok) {
         console.error('Save failed', data);
-        alert('Failed to save preferences: ' + (data.error || res.statusText));
+        alert('Failed to save preferences.');
       } else {
-        console.log('Preferences saved', data);
-        alert('Preferences saved to your profile.');
+        alert('Preferences saved.');
+        fetchProfile(userId);
       }
     } catch (err) {
-      console.error('Error saving preferences', err);
-      alert('Error saving preferences. See console for details.');
+      console.error(err);
+      alert('Error saving preferences. See console.');
     } finally {
       setSaving(false);
     }
   };
 
+  // Allow adding new feedback entries from profile page
+  const [newFeedback, setNewFeedback] = useState({ movie: '', rating: 0, text: '' });
+
+  const handleNewFeedbackChange = (e) => {
+    const { name, value } = e.target;
+    setNewFeedback(prev => ({ ...prev, [name]: value }));
+  };
+
+  const submitNewFeedback = async (e) => {
+    e.preventDefault();
+    if (!userId) {
+      alert('No user profile available.');
+      return;
+    }
+    if (!newFeedback.movie) {
+      alert('Please specify a movie title.');
+      return;
+    }
+
+    const payload = {
+      user_id: userId,
+      movie: newFeedback.movie,
+      rating: Number(newFeedback.rating) || 0,
+      text: newFeedback.text || ''
+    };
+
+    try {
+      const res = await fetch('http://localhost:5000/user/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        console.error('Feedback save failed', data);
+        alert('Failed to save feedback.');
+      } else {
+        alert('Feedback added.');
+        setNewFeedback({ movie: '', rating: 0, text: '' });
+        fetchProfile(userId);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error adding feedback.');
+    }
+  };
+
+  if (loading) return <div>Loading profile...</div>;
+  if (!userId) return (
+    <div className="input-form-container">
+      <h2>No Profile Found</h2>
+      <p>We couldn't find a user profile in this browser. To create one, submit your preferences from the preferences form first.</p>
+      <button onClick={onBack} className="back-button">← Back</button>
+    </div>
+  );
+
   return (
     <div className="input-form-container">
-      <h2>Tell Us Your Taste</h2>
-      <p>Enter your preferences, separated by commas (e.g., *The Matrix, Inception*).</p>
-      
-      <form onSubmit={handleSubmit}>
-        
+      <h2>Your Profile</h2>
+      <p><strong>User ID:</strong> {userId}</p>
+
+      <form onSubmit={handleSavePreferences}>
         <div className="input-group">
           <label htmlFor="movieInput">Favorite Movies:</label>
           <div className="inline-add">
@@ -181,15 +263,8 @@ function UserPreferenceInputForm({ onBackClick }) {
         </div>
 
         <div className="custom-select-container">
-          <label htmlFor="genres" className="block text-sm font-medium text-gray-700 mb-2">Preferred Genres (Select all that apply):</label>
-          <select
-            id="genres"
-            name="genres"
-            multiple
-            value={preferences.genres}
-            onChange={handleChange}
-            className="w-full px-4 px-3 rounded-lg bg-white border border-gray-300 text-gray-900 focus:border-red-500 focus:ring-red-200 transition duration-150 ease-in-out shadow-inner h-48"
-          >
+          <label htmlFor="genres">Preferred Genres:</label>
+          <select id="genres" name="genres" multiple value={preferences.genres} onChange={handleChange} className="h-48">
             {options.genres && options.genres.map((g, idx) => (
               <option key={idx} value={g}>{g}</option>
             ))}
@@ -251,24 +326,46 @@ function UserPreferenceInputForm({ onBackClick }) {
             ))}
           </div>
         </div>
-        
-        <button type="submit" className="submit-button" disabled={saving}>
-          {saving ? 'Saving...' : 'Save Preferences'}
-        </button>
 
-        {/* New Back Button */}
-        {onBackClick && (
-          <button 
-            type="button" 
-            onClick={onBackClick} 
-            className="back-button"
-          >
-            ← Back to Home
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button type="submit" className="submit-button" disabled={saving}>{saving ? 'Saving...' : 'Save Preferences'}</button>
+          <button type="button" className="back-button" onClick={onBack}>← Back</button>
+        </div>
       </form>
+
+      <hr />
+
+      <section>
+        <h3>Your Feedback</h3>
+        {feedback.length === 0 && <p>No feedback saved yet.</p>}
+        <ul>
+          {feedback.map((f, i) => (
+            <li key={i} style={{ marginBottom: '8px' }}>
+              <strong>{f.movie}</strong> — Rating: {f.rating}
+              {f.text ? <div style={{ marginTop: '4px' }}>{f.text}</div> : null}
+            </li>
+          ))}
+        </ul>
+
+        <h4>Add New Feedback</h4>
+        <form onSubmit={submitNewFeedback}>
+          <div className="input-group">
+            <label htmlFor="nf_movie">Movie Title:</label>
+            <input id="nf_movie" name="movie" value={newFeedback.movie} onChange={handleNewFeedbackChange} />
+          </div>
+          <div className="input-group">
+            <label htmlFor="nf_rating">Rating (1-5):</label>
+            <input id="nf_rating" name="rating" type="number" min="0" max="5" value={newFeedback.rating} onChange={handleNewFeedbackChange} />
+          </div>
+          <div className="input-group">
+            <label htmlFor="nf_text">Text (optional):</label>
+            <textarea id="nf_text" name="text" value={newFeedback.text} onChange={handleNewFeedbackChange} rows="2" />
+          </div>
+          <button type="submit" className="submit-button">Add Feedback</button>
+        </form>
+      </section>
     </div>
   );
 }
 
-export default UserPreferenceInputForm;
+export default ProfilePage;
