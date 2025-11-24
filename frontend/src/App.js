@@ -71,13 +71,36 @@ const handleRecommend = async (query, searchType) => {
       return;
     }
 
-    const params = new URLSearchParams({ title: q, top: 5 });
+    const params = new URLSearchParams({ title: q, top: recommendationCount });
     const response = await fetch(`http://localhost:5000/similar?${params.toString()}`);
 
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || "Title search failed");
 
-    setRecommendations(data.recommendations);
+    // similar returns candidate objects (may not include enriched synopsis/platforms)
+    // fetch enriched details per title to ensure synopsis/platforms are available
+    const recs = data.recommendations || [];
+    const detailed = [];
+    for (const r of recs.slice(0, recommendationCount)) {
+      try {
+        // r may be an object with movie_title or a string title
+        const title = (typeof r === 'string') ? r : (r.movie_title || r.title || '');
+        if (!title) continue;
+        const mres = await fetch(`http://localhost:5000/movie?title=${encodeURIComponent(title)}`);
+        if (mres.ok) {
+          const md = await mres.json();
+          detailed.push(md.details || md);
+        } else {
+          // fallback to original object
+          detailed.push(r);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch details for', r, err);
+        detailed.push(r);
+      }
+    }
+
+    setRecommendations(detailed);
     setMovieName(q);
 
   } catch (e) {
