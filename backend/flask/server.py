@@ -436,6 +436,17 @@ def init_db_schema():
             recommendations_json TEXT
         )
     ''')
+    # Persistent Bug Reports
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS bug_reports (
+            report_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT,
+            subject TEXT NOT NULL,
+            description TEXT NOT NULL,
+            created_at REAL
+        )
+    ''')
+
     db.commit()
 
 
@@ -905,20 +916,41 @@ def recommend_from_user():
 @app.route('/reports', methods=['POST'])
 def create_report():
     data = request.get_json() or {}
+    user_id = data.get('user_id')
+    subject = data.get('subject')
+    description = data.get('description')
+
+    if not subject or not description:
+        return jsonify({'error': 'subject and description required'}), 400
+
+    db = get_db()
+    now = time.time()
+    cur = db.execute(
+        'INSERT INTO bug_reports (user_id, subject, description, created_at) VALUES (?, ?, ?, ?)',
+        (user_id, subject, description, now)
+    )
+    db.commit()
+
+    report_id = cur.lastrowid
     report = {
-        'id': len(bug_reports) + 1,
-        'user_id': data.get('user_id'),
-        'subject': data.get('subject'),
-        'description': data.get('description')
+        'id': report_id,
+        'user_id': user_id,
+        'subject': subject,
+        'description': description
     }
-    bug_reports.append(report)
-    publish_event('bug_report_created', {'report_id': report['id'], 'user_id': report['user_id']})
+
+    publish_event('bug_report_created', {'report_id': report_id, 'user_id': user_id})
     return jsonify({'status': 'ok', 'report': report})
+
 
 
 @app.route('/reports', methods=['GET'])
 def list_reports():
-    return jsonify({'reports': bug_reports})
+    db = get_db()
+    rows = db.execute('SELECT report_id, user_id, subject, description FROM bug_reports ORDER BY created_at DESC').fetchall()
+    reports = [dict(row) for row in rows]
+    return jsonify({'reports': reports})
+
 
 
 # -----------------------
