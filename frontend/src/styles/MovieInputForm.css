@@ -17,7 +17,7 @@
 
 .input-form button {
     padding: 12px 14px;
-    background-color: #007bff;
+    background-color: var(--nf-red);
     color: white;
     border: none;
     border-radius: 6px;
@@ -27,7 +27,7 @@
 }
 
 .input-form button:hover:not(:disabled) {
-    background-color: #0056b3;
+    background-color: #b70710;
 }
 
 .input-form button:disabled {
@@ -39,7 +39,7 @@
     font-size: 18px;             
     border-radius: 6px;          
     border: 1px solid #ddd;      
-    background-color: #007bff;   
+    background-color: var(--nf-red);   
     color: white;               
     cursor: pointer;
     transition: background-color 0.3s;
@@ -48,7 +48,7 @@
 
 .input-form select:hover:not(:disabled),
 .input-form select:focus {
-    background-color: #0056b3; 
+    background-color: #b70710; 
     outline: none;
 }
 

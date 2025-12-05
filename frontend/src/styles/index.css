@@ -5,8 +5,14 @@ body {
     sans-serif; /* Sets a standard font stack */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f0f2f5; /* Light background color */
-  color: #1c1e21; /* Dark text color */
+  /* Netflix-like dark backdrop with subtle red accent */
+  --nf-red: #E50914;
+  --nf-dark: #0f0f0f;
+  --nf-surface: #ffffff;
+  --nf-text: #111;
+  background: radial-gradient(1200px 600px at 10% 10%, rgba(229,9,20,0.06), transparent),
+              linear-gradient(180deg, #0b0b0b 0%, #111111 100%);
+  color: var(--nf-surface);
 }
 
 code {
@@ -19,4 +25,42 @@ code {
 *::before,
 *::after {
   box-sizing: border-box;
+}
+
+/* Global button and control styling to match Netflix theme */
+button,
+.btn,
+input[type="button"],
+input[type="submit"],
+.action-button,
+.feedback-button,
+.add-button,
+.use-preferences-button,
+.profile-button,
+.submit-button,
+.back-button {
+  background: var(--nf-red) !important;
+  color: #fff !important;
+  border: none !important;
+  cursor: pointer;
+}
+
+button:hover, .btn:hover, .action-button:hover, .feedback-button:hover, .add-button:hover, .use-preferences-button:hover, .submit-button:hover {
+  background: #b70710 !important;
+}
+
+/* Make inputs and cards sit on a light surface to improve contrast.
+   Keep the overall app frame transparent so it shows the global background. */
+.input-form-container,
+.input-form,
+.movie-card {
+  background: #fff;
+  color: #111;
+}
+
+/* Ensure links that use .btn-secondary remain visible */
+.btn-secondary {
+  background: transparent !important;
+  color: #fff !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
 }
