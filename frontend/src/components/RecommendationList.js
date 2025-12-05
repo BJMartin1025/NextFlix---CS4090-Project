@@ -41,8 +41,28 @@ function RecommendationList({ movieName, recommendations, onFeedbackSubmit, watc
                 {index + 1}. {movieObj.movie_title} 
                 {movieObj.score !== undefined && ` (Score: ${movieObj.score})`}
               </p>
+
+              <div className="api-ratings-container">
+                  <span className="rating-badge imdb">IMDb: 
+                      <strong>{movieObj.imdb_score || 'N/A'}</strong>
+                  </span>
+                  <span className="rating-badge rt">Rotten Tomatoes: 
+                      <strong>{movieObj.rotten_tomatoes_score || 'N/A'}</strong>
+                  </span>
+                  <span className="rating-badge mc">Metacritic: 
+                      <strong>{movieObj.metacritic_score || 'N/A'}</strong>
+                  </span>
+              </div>
+              
               <p className="movie-director">Director: {movieObj.director_name}</p>
+              <p className="movie-actors">Actors: {[
+                movieObj.actor_1_name,
+                movieObj.actor_2_name,
+                movieObj.actor_3_name
+              ].filter(Boolean).join(', ')}</p>
               <p className="movie-genres">Genres: {movieObj.genres}</p>
+              <p className="movie-synopsis">{movieObj.synopsis && movieObj.synopsis.trim() ? movieObj.synopsis : 'Synopsis: Not available'}</p>
+              <p className="movie-platforms">Platforms: {movieObj.platforms && movieObj.platforms.length ? movieObj.platforms.join(', ') : 'Not available'}</p>
             </div>
 
             <div className="feedback-section">

@@ -19,6 +19,65 @@
     font-size: 1.1em;
 }
 
+.api-ratings-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.rating-badge {
+    font-size: 0.9em;
+    font-weight: 500;
+    padding: 4px 8px;
+    border-radius: 4px;
+    display: inline-block;
+    border: 1px solid #ccc;
+    background-color: #fff;
+}
+
+.rating-badge strong {
+    font-weight: 700;
+    color: #007bff; /* General blue color for scores */
+}
+
+/* Specific color for Rotten Tomatoes (Red) */
+.rating-badge.rt strong {
+    color: #b71c1c;
+}
+
+/* Specific color for IMDb (Gold/Yellow) */
+.rating-badge.imdb strong {
+    color: #f5c518;
+}
+
+/* Specific color for Metacritic (Green/Blue depending on score) */
+.rating-badge.mc strong {
+    color: #388e3c;
+}
+
+.movie-director {
+    font-weight: 600;
+    margin: 4px 0;
+}
+
+.movie-actors {
+    margin: 4px 0;
+    color: #555;
+    font-size: 0.98em;
+}
+
+.movie-synopsis {
+    margin: 8px 0;
+    color: #444;
+}
+
+.movie-platforms {
+    margin: 6px 0;
+    font-size: 0.95em;
+    color: #555;
+}
+
 .feedback-section {
     margin-top: 10px;
     padding-top: 10px;
@@ -76,6 +135,24 @@ body.dark-mode .movie-title-rec,
 body.dark-mode .movie-director,
 body.dark-mode .movie-genres {
     color: #e6e6e6;
+}
+
+body.dark-mode .rating-badge {
+    background-color: #2a2a2a;
+    border-color: #444;
+}
+body.dark-mode .rating-badge strong {
+    color: #a0c3ff;
+}
+
+body.dark-mode .rating-badge.rt strong {
+    color: #fc8181;
+}
+body.dark-mode .rating-badge.imdb strong {
+    color: #ffe082;
+}
+body.dark-mode .rating-badge.mc strong {
+    color: #76ff03;
 }
 
 body.dark-mode .feedback-section textarea {

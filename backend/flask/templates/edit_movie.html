@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Movie - NextFlix Admin</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 30px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 14px;
+        }
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        .form-hint {
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
+        }
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+        .btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 Edit Movie</h1>
+        
+        <div id="error-msg" class="error"></div>
+        <div id="success-msg" class="success"></div>
+
+        <form id="movie-form" onsubmit="handleSubmit(event)">
+            <div class="form-group">
+                <label for="movie_title">Movie Title *</label>
+                <input type="text" id="movie_title" name="movie_title" required value="{{ movie.movie_title or '' }}">
+                <div class="form-hint">Required field</div>
+            </div>
+
+            <div class="form-group">
+                <label for="director_name">Director</label>
+                <input type="text" id="director_name" name="director_name" value="{{ movie.director_name or '' }}">
+                <div class="form-hint">Director name (optional)</div>
+            </div>
+
+            <div class="form-group">
+                <label for="actor_1_name">Lead Actor</label>
+                <input type="text" id="actor_1_name" name="actor_1_name" value="{{ movie.actor_1_name or '' }}">
+                <div class="form-hint">Primary actor (optional)</div>
+            </div>
+
+            <div class="form-group">
+                <label for="actor_2_name">Supporting Actor 2</label>
+                <input type="text" id="actor_2_name" name="actor_2_name" value="{{ movie.actor_2_name or '' }}">
+                <div class="form-hint">Secondary actor (optional)</div>
+            </div>
+
+            <div class="form-group">
+                <label for="actor_3_name">Supporting Actor 3</label>
+                <input type="text" id="actor_3_name" name="actor_3_name" value="{{ movie.actor_3_name or '' }}">
+                <div class="form-hint">Tertiary actor (optional)</div>
+            </div>
+
+            <div class="form-group">
+                <label for="genres">Genres</label>
+                <input type="text" id="genres" name="genres" value="{{ movie.genres or '' }}">
+                <div class="form-hint">Comma-separated genres (optional)</div>
+            </div>
+
+            <div class="form-group">
+                <label for="tags">Tags</label>
+                <textarea id="tags" name="tags">{{ movie.tags or '' }}</textarea>
+                <div class="form-hint">Comma-separated tags (optional)</div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Update Movie</button>
+                <a href="/" class="btn btn-secondary" style="text-decoration: none; text-align: center;">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        function handleSubmit(event) {
+            event.preventDefault();
+            
+            const form = document.getElementById('movie-form');
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData);
+            
+            const errorEl = document.getElementById('error-msg');
+            const successEl = document.getElementById('success-msg');
+            errorEl.style.display = 'none';
+            successEl.style.display = 'none';
+            
+            const movieId = window.location.pathname.split('/')[2];
+            
+            fetch(`/edit/${movieId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'ok') {
+                    successEl.textContent = data.message;
+                    successEl.style.display = 'block';
+                    setTimeout(() => window.location.href = '/', 2000);
+                } else {
+                    throw new Error(data.error || 'Unknown error');
+                }
+            })
+            .catch(err => {
+                errorEl.textContent = 'Error: ' + err.message;
+                errorEl.style.display = 'block';
+            });
+        }
+    </script>
+</body>
+</html>

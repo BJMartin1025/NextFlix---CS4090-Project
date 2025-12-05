@@ -15,4 +15,8 @@ To run the frontend server, in a new terminal, run the following with node.js in
 
 Note: Sometimes npm causes the script to exit after running "npm install", so you may have to direct to the frontend folder and manually run "npm start". 
 
-Then visit the site at http://localhost:3000.
+This will automatically open the site in your browser after a few seconds.
+
+To access the admin server to add, edit, or delete movie entries, run:
+cd backend/flask
+python admin.py
