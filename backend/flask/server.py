@@ -822,15 +822,38 @@ def add_favorite():
     if not user_id or not movie:
         return jsonify({'error': 'user_id and movie required'}), 400
     user = user_profiles.setdefault(user_id, {})
-    # ensure preferences.movies contains it (merge)
-    prefs = user.setdefault('preferences', {})
-    movies = prefs.setdefault('movies', [])
-    low = {m.strip().lower() for m in movies if m}
-    if movie.strip().lower() not in low:
+    # Load existing preferences from DB (preferred) or in-memory
+    prefs = get_user_preferences(user_id) or user.setdefault('preferences', {})
+    # ensure the movies list exists and merge (dedupe)
+    movies = prefs.get('movies') or []
+    low_movies = {m.strip().lower() for m in movies if m}
+    if movie.strip().lower() not in low_movies:
         movies.append(movie)
-    favs = user.setdefault('favorites', [])
-    if movie.strip().lower() not in {f.strip().lower() for f in favs if f}:
+    prefs['movies'] = movies
+
+    # favorites list (stored inside preferences under key 'favorites')
+    favs = prefs.get('favorites') or []
+    low_favs = {f.strip().lower() for f in favs if f}
+    if movie.strip().lower() not in low_favs:
         favs.append(movie)
+    prefs['favorites'] = favs
+
+    # Update in-memory representation as well
+    user['preferences'] = prefs
+    user['favorites'] = favs
+
+    # Persist back to DB (upsert into users_preferences)
+    try:
+        db = get_db()
+        db.execute(
+            'INSERT INTO users_preferences (user_id, preferences_json, updated_at) VALUES (?, ?, ?) '
+            'ON CONFLICT(user_id) DO UPDATE SET preferences_json=excluded.preferences_json, updated_at=excluded.updated_at',
+            (user_id, json.dumps(prefs), time.time())
+        )
+        db.commit()
+    except Exception as e:
+        logger.error('Failed to persist favorites to DB for user %s: %s', user_id, e)
+
     publish_event('favorite_added', {'user_id': user_id, 'movie': movie})
     return jsonify({'status': 'ok', 'favorites': favs, 'preferences': prefs})
 

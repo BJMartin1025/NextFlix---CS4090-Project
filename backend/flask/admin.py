@@ -173,5 +173,34 @@ def api_movies():
     db.close()
     return jsonify([dict(m) for m in movies])
 
+
+@app.route('/reports', methods=['GET'])
+def reports():
+    """Admin reports view - list stored bug reports."""
+    db = get_db()
+    rows = db.execute('SELECT report_id, user_id, subject, description, created_at FROM bug_reports ORDER BY created_at DESC').fetchall()
+    db.close()
+    reports = [dict(r) for r in rows]
+    return render_template('admin_reports.html', reports=reports)
+
+
+@app.route('/reports/delete/<int:report_id>', methods=['POST'])
+def delete_report(report_id):
+    db = get_db()
+    row = db.execute('SELECT report_id FROM bug_reports WHERE report_id = ?', (report_id,)).fetchone()
+    if not row:
+        db.close()
+        return jsonify({'error': 'Report not found'}), 404
+    try:
+        db.execute('DELETE FROM bug_reports WHERE report_id = ?', (report_id,))
+        db.commit()
+        db.close()
+        if request.is_json:
+            return jsonify({'status': 'ok', 'message': f'Report {report_id} deleted'}), 200
+        return redirect(url_for('reports'))
+    except Exception as e:
+        db.close()
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     app.run(debug=True, port=5001)

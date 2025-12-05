@@ -110,7 +110,10 @@
         
         <div class="header-actions">
             <p>Total Movies: <strong id="movie-count">{{ movies|length }}</strong></p>
-            <a href="{{ url_for('add_movie') }}" class="btn btn-primary">+ Add New Movie</a>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <a href="{{ url_for('add_movie') }}" class="btn btn-primary">+ Add New Movie</a>
+                <a href="{{ url_for('reports') }}" class="btn btn-secondary">View Reports</a>
+            </div>
         </div>
 
         <div style="margin-bottom:18px;">

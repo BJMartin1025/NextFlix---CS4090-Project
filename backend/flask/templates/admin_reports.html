@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NextFlix Admin - Bug Reports</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f7f7f8; color: #222; }
+        .container { max-width: 1100px; margin: 24px auto; background: white; padding: 22px; border-radius: 8px; box-shadow: 0 8px 30px rgba(0,0,0,0.08); }
+        h1 { margin-bottom: 14px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px 10px; border-bottom: 1px solid #eee; text-align: left; }
+        th { background: #fafafa; font-weight: 700; }
+        .actions { display:flex; gap:8px; }
+        .btn { padding: 8px 12px; border-radius:6px; text-decoration:none; display:inline-block; }
+        .btn-primary { background:#667eea; color:white; }
+        .btn-danger { background:#e74c3c; color:white; border:none; cursor:pointer; }
+        .small-muted { color:#666; font-size:0.9em; }
+        .top-actions { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="top-actions">
+            <h1>🐞 Bug Reports</h1>
+            <div>
+                <a href="{{ url_for('index') }}" class="btn btn-primary">← Back to Movies</a>
+            </div>
+        </div>
+
+        {% if reports and reports|length > 0 %}
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>User ID</th>
+                    <th>Subject</th>
+                    <th>Description</th>
+                    <th>Created At</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in reports %}
+                <tr>
+                    <td>{{ r.report_id }}</td>
+                    <td class="small-muted">{{ r.user_id or '-' }}</td>
+                    <td>{{ r.subject }}</td>
+                    <td>{{ r.description }}</td>
+                    <td class="small-muted">{{ r.created_at | default('') }}</td>
+                    <td>
+                        <div class="actions">
+                            <form method="post" action="{{ url_for('delete_report', report_id=r.report_id) }}" onsubmit="return confirm('Delete this report?');">
+                                <button type="submit" class="btn btn-danger">Delete</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No bug reports found.</p>
+        {% endif %}
+    </div>
+</body>
+</html>
