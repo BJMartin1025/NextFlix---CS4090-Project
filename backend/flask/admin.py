@@ -2,6 +2,8 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 import sqlite3
 from pathlib import Path
+import csv
+from io import TextIOWrapper
 
 app = Flask(__name__)
 DATABASE = "movies.db"
@@ -14,6 +16,59 @@ def get_db():
     db = sqlite3.connect(DATABASE)
     db.row_factory = sqlite3.Row
     return db
+
+#CSV Loader
+@app.route('/upload_csv', methods=['POST'])
+def upload_csv():
+    file = request.files.get('csv_file')
+    if not file:
+        return "No file uploaded", 400
+
+    # CSV assumed UTF-8
+    wrapper = TextIOWrapper(file, encoding='utf-8')
+    reader = csv.DictReader(wrapper)
+
+    required_columns = {"movie_title", "director_name", "actor_1_name", "actor_2_name", "actor_3_name", "genres", "tags"}
+    if not required_columns.issubset(reader.fieldnames):
+        return f"CSV is missing required columns. Required: {required_columns}", 400
+
+    db = get_db()
+    inserted = 0
+    errors = []
+
+    for i, row in enumerate(reader, start=2):  # line numbers for reporting
+        try:
+            title = (row.get("movie_title") or "").strip()
+            if not title:
+                errors.append(f"Line {i}: Missing title")
+                continue
+
+            db.execute(f"""
+                INSERT INTO {MOVIES_TABLE}
+                (director_name, actor_1_name, actor_2_name, actor_3_name, genres, movie_title, tags, movie_title_lower)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                (row.get("director_name") or "").strip(),
+                (row.get("actor_1_name") or "").strip(),
+                (row.get("actor_2_name") or "").strip(),
+                (row.get("actor_3_name") or "").strip(),
+                (row.get("genres") or "").strip(),
+                title,
+                (row.get("tags") or "").strip(),
+                title.lower()
+            ))
+            inserted += 1
+        except Exception as e:
+            errors.append(f"Line {i}: {str(e)}")
+
+    db.commit()
+    db.close()
+
+    return jsonify({
+        "status": "completed",
+        "inserted": inserted,
+        "errors": errors
+    })
 
 @app.route('/')
 def index():

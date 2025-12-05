@@ -24,6 +24,12 @@ python3 server.py &
 BACKEND_PID=$!
 echo "Flask PID: $BACKEND_PID"
 
+# --- Start Admin Flask server on port 5001 ---
+echo "Starting Admin Flask server..."
+python3 admin.py &
+ADMIN_PID=$!
+echo "Admin PID: $ADMIN_PID"
+
 # --- 4. Start frontend ---
 cd ../../frontend
 
@@ -38,4 +44,6 @@ npm start
 # --- 5. Cleanup ---
 echo "Frontend exited. Killing Flask server (PID $BACKEND_PID)..."
 kill $BACKEND_PID
+echo "Killing Admin Flask server (PID $ADMIN_PID)..."
+kill $ADMIN_PID
 echo "All done."
