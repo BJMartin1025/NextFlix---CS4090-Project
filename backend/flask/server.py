@@ -381,6 +381,25 @@ def enrich_movie_info(movie):
 def init_db_schema():
     db = get_db()
     cur = db.cursor()
+    
+    # Movies table
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS movies_flat (
+            rowid INTEGER PRIMARY KEY,
+            director_name TEXT,
+            actor_1_name TEXT,
+            actor_2_name TEXT,
+            actor_3_name TEXT,
+            genres TEXT,
+            movie_title TEXT,
+            tags TEXT,
+            movie_title_lower TEXT,
+            synopsis TEXT,
+            rating REAL,
+            platforms TEXT
+        )
+    ''')
+    
     # Users basic table
     cur.execute('''
         CREATE TABLE IF NOT EXISTS users_basic (
