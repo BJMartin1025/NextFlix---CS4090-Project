@@ -176,6 +176,21 @@ cd backend/flask
 pytest test_admin.py -v
 ```
 
+### Continuous Deployment (GitHub Pages)
+
+The repository contains a CD workflow to publish the built frontend to GitHub Pages when code is pushed to `main` (e.g., after you merge `dev` into `main`).
+
+- File: `.github/workflows/cd.yml`
+- Trigger: `push` to `main` branch
+- What it does:
+   - Runs the full backend test suite (including `test_admin.py`) and generates coverage reports
+   - Builds the frontend (`npm run build`)
+   - Publishes the frontend build output (`frontend/build`) to GitHub Pages using the official Pages actions (`actions/upload-pages-artifact` and `actions/deploy-pages`).
+
+Notes:
+- No additional repository secrets are required for GitHub Pages deployment—the workflow uses the built-in `GITHUB_TOKEN` to perform the Pages deployment.
+- The CD workflow will still run tests and builds even if Pages deployment is disabled in repository settings; you can enable/disable Pages in the repository's GitHub settings as needed.
+
 ### Frontend (Jest) Tests
 
 Frontend tests live in `frontend/src/tests` and assert component rendering, interactions, and local state.
