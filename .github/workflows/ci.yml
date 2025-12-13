@@ -29,20 +29,15 @@ jobs:
           pip install pytest pytest-cov flask flask-cors requests
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       
-      - name: Run unit tests
+      - name: Run tests
         working-directory: backend/flask
         run: |
-          pytest test_server.py -v --tb=short
-      
-      - name: Run integration tests
-        working-directory: backend/flask
-        run: |
-          pytest test_integration.py -v --tb=short
+          pytest -v test_server.py test_integration.py test_admin.py --tb=short
       
       - name: Generate coverage report
         working-directory: backend/flask
         run: |
-          pytest test_server.py test_integration.py --cov=. --cov-report=xml --cov-report=html
+          pytest test_server.py test_integration.py test_admin.py --cov=. --cov-report=xml --cov-report=html
       
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
@@ -86,7 +81,7 @@ jobs:
       
       - name: Run tests
         working-directory: frontend
-        run: npm test -- --coverage --watchAll=false || echo "No tests defined"
+        run: npm test -- --coverage --watchAll=false --passWithNoTests
 
   # ==================== Code Quality & Security ====================
   code-quality:

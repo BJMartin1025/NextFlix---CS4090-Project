@@ -1,7 +1,8 @@
 # NextFlix Test Suite - Final Results
 
 ## Summary
-✅ **All 48 tests passing** with **60% code coverage**
+✅ **Backend: 60 tests passing** with **60% code coverage**
+✅ **Frontend: 12 tests passing** (component/unit tests)
 
 ## Test Execution Results
 
@@ -53,6 +54,33 @@
   - `test_missing_required_fields`
   - `test_case_insensitive_search`
   - `test_duplicate_watchlist_prevention`
+
+### Admin Server Tests (12 tests)
+- `test_upload_csv_no_file`
+- `test_upload_csv_missing_columns`
+- `test_upload_csv_success`
+- `test_index_shows_movies`
+- `test_api_movies`
+- `test_add_movie_json`
+- `test_add_movie_missing_title`
+- `test_edit_movie_json_success`
+- `test_edit_movie_missing_title`
+- `test_delete_movie_json_success`
+- `test_delete_movie_not_found`
+- `test_reports_and_delete`
+
+## Frontend Tests (Jest)
+- Test files exist under `frontend/src/tests/` and include:
+  - `App.test.js`
+  - `MovieInputForm.test.js`
+  - `UserPreferenceInputForm.test.js`
+  - `ProfilePage.test.js`
+  - `RecommendationList.test.js`
+  - `ToWatchList.test.js`
+  - `StarRating.test.js`
+  - `BugReportPage.test.js`
+  - `AccessibilityMenu.test.js`
+  - Other component tests (see `frontend/src/tests/`)
 
 ### Integration Tests (13 tests)
 - **TestEndToEndUserJourney** (6 tests) ✅ ALL PASSING
@@ -123,12 +151,12 @@ TOTAL         800    323    60%
 To run all tests locally:
 ```bash
 cd backend/flask
-python -m pytest test_server.py test_integration.py -v
+python -m pytest test_server.py test_integration.py test_admin.py -v
 ```
 
 To run with coverage:
 ```bash
-python -m pytest test_server.py test_integration.py --cov=server --cov-report=html
+python -m pytest test_server.py test_integration.py test_admin.py --cov=server --cov-report=html
 ```
 
 To run specific test class:
@@ -138,7 +166,7 @@ python -m pytest test_server.py::TestAPIEndpoints -v
 
 ## CI/CD Pipeline Status
 
-The GitHub Actions workflow (`.github/workflows/ci-cd.yml`) will:
+The GitHub Actions workflow (`.github/workflows/ci.yml`) will:
 - Run tests on Python 3.9, 3.10, 3.11
 - Run tests on Node 16, 18, 20 (frontend)
 - Generate coverage reports

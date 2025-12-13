@@ -97,7 +97,10 @@ pytest test_server.py -v
 pytest test_integration.py -v
 
 # With coverage
-pytest test_server.py test_integration.py --cov=. --cov-report=html
+pytest test_server.py test_integration.py test_admin.py --cov=. --cov-report=html
+
+# Admin tests
+pytest test_admin.py -v
 ```
 
 ### Run Specific Test Class
@@ -146,7 +149,7 @@ pytest test_server.py::TestSimilarityScoring::test_exact_director_match -v
 
 ## CI/CD Pipeline
 
-### GitHub Actions Workflow (`.github/workflows/ci-cd.yml`)
+### GitHub Actions Workflow (`.github/workflows/ci.yml`)
 
 The workflow includes:
 
@@ -159,6 +162,28 @@ The workflow includes:
    - Linting (ESLint)
    - Build verification
    - Component tests (if defined)
+
+### Admin Server Tests
+
+These tests unit-test and validate the admin server endpoints implemented in `backend/flask/admin.py`.
+- CSV loading: validating required columns, ingest behavior, and error handling
+- CRUD operations: add, edit, delete and listing via API and templates
+- Reports: listing and deletion
+
+Run admin tests locally:
+```bash
+cd backend/flask
+pytest test_admin.py -v
+```
+
+### Frontend (Jest) Tests
+
+Frontend tests live in `frontend/src/tests` and assert component rendering, interactions, and local state.
+Run all frontend tests with coverage:
+```bash
+cd frontend
+npm test -- --coverage --watchAll=false --passWithNoTests
+```
 
 3. **Code Quality** - Flake8 and Pylint
    - PEP8 compliance

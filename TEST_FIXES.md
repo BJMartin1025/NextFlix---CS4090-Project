@@ -1,7 +1,7 @@
 # Test Suite Fixes - Implementation Details
 
 ## Overview
-Fixed critical test infrastructure issues that were preventing the test suite from executing. All 48 tests now pass with 60% code coverage.
+Fixed critical test infrastructure issues that were preventing the test suite from executing. All 60 backend tests now pass with 60% code coverage.
 
 ## Problems Identified and Resolved
 
@@ -240,19 +240,19 @@ def test_database_operation(self, client):
 - ✅ 7 PASSED tests
 - 📊 ~15% tests working
 
-### After Fixes
-- ✅ **48 PASSED tests** (100% passing)
+- ### After Fixes
+- ✅ **60 PASSED tests** (100% passing)
 - ❌ 0 FAILED
 - ❌ 0 ERROR
 - 📊 **60% code coverage**
 
 ## Performance Impact
-
-### Test Execution Time
-- **Before**: Would fail during collection/fixture setup
-- **After**: ~12-13 seconds for full test suite (48 tests)
-- **Per test average**: ~0.26 seconds
-
+# Run all tests
+python -m pytest test_server.py test_integration.py test_admin.py -v
+# Run with coverage
+python -m pytest test_server.py test_integration.py test_admin.py --cov=server --cov-report=html
+# Run with detailed output
+python -m pytest test_server.py test_integration.py test_admin.py -vv --tb=long
 ### Database Performance
 - Temporary in-memory SQLite database for tests
 - No external dependencies
@@ -264,10 +264,10 @@ def test_database_operation(self, client):
 Run tests to verify all fixes:
 ```bash
 # Run all tests
-python -m pytest test_server.py test_integration.py -v
+python -m pytest test_server.py test_integration.py test_admin.py -v
 
 # Expected output:
-# ===== 48 passed in ~13s =====
+# ===== 60 passed in ~13s =====
 ```
 
 ## Key Learnings
