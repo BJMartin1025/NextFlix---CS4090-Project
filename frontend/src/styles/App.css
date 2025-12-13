@@ -13,7 +13,7 @@ html, body, #root {
 
 .app-header {
     text-align: center;
-    color: #333;
+    color: #eee;
     border-bottom: 2px solid #eee;
     padding-bottom: 10px;
     margin-bottom: 20px;
@@ -66,7 +66,7 @@ html, body, #root {
 }
 
 .use-preferences-button {
-    background: #007bff;
+    background: var(--nf-red);
     color: white;
     border: none;
     padding: 8px 12px;

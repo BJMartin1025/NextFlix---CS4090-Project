@@ -5,3 +5,6 @@ flask
 flask_cors
 requests
 kafka-python
+pytest
+pytest-cov
+coverage

@@ -110,8 +110,18 @@
         
         <div class="header-actions">
             <p>Total Movies: <strong id="movie-count">{{ movies|length }}</strong></p>
-            <a href="{{ url_for('add_movie') }}" class="btn btn-primary">+ Add New Movie</a>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <a href="{{ url_for('add_movie') }}" class="btn btn-primary">+ Add New Movie</a>
+                <a href="{{ url_for('reports') }}" class="btn btn-secondary">View Reports</a>
+
+                <!-- CSV Upload -->
+                <form action="/upload_csv" method="POST" enctype="multipart/form-data" style="display:flex;gap:6px;align-items:center;">
+                    <input type="file" name="csv_file" accept=".csv" required style="font-size:12px;">
+                    <button type="submit" class="btn btn-primary btn-small">Upload CSV</button>
+                </form>
+            </div>
         </div>
+
 
         <div style="margin-bottom:18px;">
             <form method="get" action="{{ url_for('index') }}" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
