@@ -2,6 +2,7 @@
   "name": "movie-recommender-frontend",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://BJMartin1025.github.io/NextFlix---CS4090-Project",
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
