@@ -736,30 +736,14 @@ def save_preferences():
     # This ensures removals (emptying a list or omitting items) persist.
     user = user_profiles.setdefault(user_id, {})
     # normalize to ensure keys exist
-    current_prefs = user.get('preferences', {
-        'movies': [],
-        'genres': [],
-        'directors': [],
-        'actors': []
-    })
-    
-    incoming_prefs = {
+    normalized = {
         'movies': prefs.get('movies') or [],
         'genres': prefs.get('genres') or [],
         'directors': prefs.get('directors') or [],
         'actors': prefs.get('actors') or []
     }
-    
-    for key in incoming_prefs:
-        # Combine existing items and new items
-        combined_list = current_prefs[key] + incoming_prefs[key]
+    user['preferences'] = normalized
 
-        # Convert to a set to remove duplicates, then back to a list
-        current_prefs[key] = list(set(combined_list))
-
-    # Store the merged preferences back into the user profile
-    user['preferences'] = current_prefs
-    normalized = user['preferences']
     # persist to DB users_preferences table as JSON for durability
     try:
         db = get_db()
