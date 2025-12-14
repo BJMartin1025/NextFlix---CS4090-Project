@@ -20,6 +20,7 @@ This will automatically open the site in your browser after a few seconds.
 Environment variables for deployment:
 - `REACT_APP_API_URL`: Set at build time to override the API base URL used by the frontend. Defaults to `http://localhost:5000` for local development.
 - `CORS_ORIGINS`: Comma-separated list used by the backend to set CORS origins (default includes `http://localhost:3000` and the GitHub Pages origin). Example: `http://localhost:3000,https://yourdomain.github.io`.
+ - `PRODUCTION_API_URL` (GitHub secret): The CI/CD `cd.yml` workflow reads this as `REACT_APP_API_URL` during the production build. Set this in the repository secrets if your backend is publicly available (e.g., `https://api.yoursite.com`).
 
 To access the admin server to add, edit, or delete movie entries, run:
 cd backend/flask
