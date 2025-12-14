@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/NextFlix---CS4090-Project/static/css/main.d3773ec9.css",
+    "main.js": "/NextFlix---CS4090-Project/static/js/main.d2ddd76e.js",
+    "index.html": "/NextFlix---CS4090-Project/index.html",
+    "main.d3773ec9.css.map": "/NextFlix---CS4090-Project/static/css/main.d3773ec9.css.map",
+    "main.d2ddd76e.js.map": "/NextFlix---CS4090-Project/static/js/main.d2ddd76e.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.d3773ec9.css",
+    "static/js/main.d2ddd76e.js"
+  ]
+}
