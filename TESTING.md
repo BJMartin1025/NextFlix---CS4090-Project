@@ -185,8 +185,11 @@ The repository contains a CD workflow to publish the built frontend to GitHub Pa
 - What it does:
    - Runs the full backend test suite (including `test_admin.py`) and generates coverage reports
    - Builds the frontend (`npm run build`)
-   - Publishes the frontend build output (`frontend/build`) to GitHub Pages using the official Pages actions (`actions/upload-pages-artifact` and `actions/deploy-pages`).
-   - Publishes the frontend build output (`frontend/build`) to GitHub Pages. The workflow currently uses `peaceiris/actions-gh-pages@v3` to publish to the `gh-pages` branch (no additional secrets required beyond `GITHUB_TOKEN`).
+   - Publishes the frontend build output (`frontend/build`) to GitHub Pages using `peaceiris/actions-gh-pages@v3` (publishes to `gh-pages` branch)
+
+Notes on frontend dependency install:
+   - The workflow attempts `npm ci` when `frontend/package.json` is present for deterministic installs.
+   - If `frontend/package.json` does not exist, the workflow falls back to `npm install` — this avoids the `npm ci` exit code 1 error.
 
 Notes:
 - No additional repository secrets are required for GitHub Pages deployment—the workflow uses the built-in `GITHUB_TOKEN` to perform the Pages deployment.
