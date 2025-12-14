@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import API_BASE from '../api';
 import '../styles/RecommendationList.css';
 import RecommendationList from './RecommendationList';
 
@@ -23,7 +24,7 @@ function ToWatchList({ onBack, onFeedbackSubmit, onAddToFavorites, onMarkSeen, w
   const fetchWatchlistDetails = async (id) => {
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:5000/user/watchlist/${id}`);
+      const res = await fetch(`${API_BASE}/user/watchlist/${id}`);
       if (!res.ok) {
         setDetailedList([]);
         return;
@@ -33,7 +34,7 @@ function ToWatchList({ onBack, onFeedbackSubmit, onAddToFavorites, onMarkSeen, w
       // fetch movie details for each title
       const detailPromises = titles.map(async (t) => {
         try {
-          const mres = await fetch(`http://localhost:5000/movie?title=${encodeURIComponent(t)}`);
+          const mres = await fetch(`${API_BASE}/movie?title=${encodeURIComponent(t)}`);
           if (mres.ok) {
             const md = await mres.json();
             return md.details || md;

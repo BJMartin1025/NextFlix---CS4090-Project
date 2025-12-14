@@ -7,6 +7,7 @@ import BugReportPage from './components/BugReportPage';
 import AccessibilityMenu from './components/AccessibilityMenu';
 import ToWatchList from './components/ToWatchList';
 import './styles/App.css'; // For basic styling
+import API_BASE from './api';
 
 function App() {
   const [movieName, setMovieName] = useState('');
@@ -23,7 +24,7 @@ function App() {
       const userId = localStorage.getItem('nextflix_user_id');
       if (!userId) { setUserWatchlist([]); return; }
       try {
-        const res = await fetch(`http://localhost:5000/user/watchlist/${userId}`);
+        const res = await fetch(`${API_BASE}/user/watchlist/${userId}`);
         if (res.ok) {
           const d = await res.json();
           setUserWatchlist(d.watchlist || []);
@@ -43,7 +44,7 @@ const handleRecommend = async (query, searchType) => {
   try {
     const q = query.trim();
     if (searchType === 'director') {
-      const url = `http://localhost:5000/search?director=${encodeURIComponent(q)}`;
+      const url = `${API_BASE}/search?director=${encodeURIComponent(q)}`;
       const res = await fetch(url);
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Director search failed");
@@ -53,7 +54,7 @@ const handleRecommend = async (query, searchType) => {
     }
 
     if (searchType === 'actor') {
-      const url = `http://localhost:5000/search?actor=${encodeURIComponent(q)}`;
+      const url = `${API_BASE}/search?actor=${encodeURIComponent(q)}`;
       const res = await fetch(url);
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Actor search failed");
@@ -62,7 +63,7 @@ const handleRecommend = async (query, searchType) => {
       return;
     }
     if (searchType === 'genre') {
-      const url = `http://localhost:5000/search?genre=${encodeURIComponent(q)}`;
+      const url = `${API_BASE}/search?genre=${encodeURIComponent(q)}`;
       const res = await fetch(url);
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Genre search failed");
@@ -72,7 +73,7 @@ const handleRecommend = async (query, searchType) => {
     }
 
     const params = new URLSearchParams({ title: q, top: recommendationCount });
-    const response = await fetch(`http://localhost:5000/similar?${params.toString()}`);
+    const response = await fetch(`${API_BASE}/similar?${params.toString()}`);
 
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || "Title search failed");
@@ -86,7 +87,7 @@ const handleRecommend = async (query, searchType) => {
         // r may be an object with movie_title or a string title
         const title = (typeof r === 'string') ? r : (r.movie_title || r.title || '');
         if (!title) continue;
-        const mres = await fetch(`http://localhost:5000/movie?title=${encodeURIComponent(title)}`);
+        const mres = await fetch(`${API_BASE}/movie?title=${encodeURIComponent(title)}`);
         if (mres.ok) {
           const md = await mres.json();
           detailed.push(md.details || md);
@@ -119,7 +120,7 @@ const handleRecommend = async (query, searchType) => {
     setError(null);
     setRecommendations([]);
     try {
-      const res = await fetch('http://localhost:5000/recommend/user', {
+      const res = await fetch(`${API_BASE}/recommend/user`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: userId, top_n: recommendationCount })
@@ -134,7 +135,7 @@ const handleRecommend = async (query, searchType) => {
       const detailed = [];
       for (const t of titles.slice(0, recommendationCount)) {
         try {
-          const mres = await fetch(`http://localhost:5000/movie?title=${encodeURIComponent(t)}`);
+          const mres = await fetch(`${API_BASE}/movie?title=${encodeURIComponent(t)}`);
           if (mres.ok) {
             const md = await mres.json();
             // server returns either {details: {...}} or full row
@@ -158,7 +159,7 @@ const handleRecommend = async (query, searchType) => {
     try {
       const userId = localStorage.getItem('nextflix_user_id') || null;
       const payload = { user_id: userId, movie: recommendedMovie, rating, text: feedbackText };
-      const res = await fetch('http://localhost:5000/user/feedback', {
+      const res = await fetch(`${API_BASE}/user/feedback`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
       });
       if (!res.ok) {
@@ -173,7 +174,7 @@ const handleRecommend = async (query, searchType) => {
     const userId = localStorage.getItem('nextflix_user_id');
     if (!userId) return alert('No user profile found.');
     try {
-      const res = await fetch('http://localhost:5000/user/watchlist', {
+      const res = await fetch(`${API_BASE}/user/watchlist`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: userId, movie: movieTitle })
       });
       if (res.ok) {
@@ -194,7 +195,7 @@ const handleRecommend = async (query, searchType) => {
     const userId = localStorage.getItem('nextflix_user_id');
     if (!userId) return alert('No user profile found.');
     try {
-      const res = await fetch('http://localhost:5000/user/watchlist/remove', {
+      const res = await fetch(`${API_BASE}/user/watchlist/remove`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: userId, movie: movieTitle })
       });
       if (res.ok) {
@@ -218,7 +219,7 @@ const handleRecommend = async (query, searchType) => {
     const userId = localStorage.getItem('nextflix_user_id');
     if (!userId) return alert('No user profile found.');
     try {
-      const res = await fetch('http://localhost:5000/user/favorites', {
+      const res = await fetch(`${API_BASE}/user/favorites`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: userId, movie: movieTitle })
       });
       if (res.ok) {
@@ -231,7 +232,7 @@ const handleRecommend = async (query, searchType) => {
     const userId = localStorage.getItem('nextflix_user_id');
     if (!userId) return alert('No user profile found.');
     try {
-      const res = await fetch('http://localhost:5000/user/seen', {
+      const res = await fetch(`${API_BASE}/user/seen`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: userId, movie: movieTitle })
       });
       if (res.ok) {

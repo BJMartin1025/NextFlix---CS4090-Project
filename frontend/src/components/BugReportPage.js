@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import API_BASE from '../api';
 import '../styles/UserPreferenceInputForm.css';
 
 function BugReportPage({ onBack }) {
@@ -27,7 +28,7 @@ function BugReportPage({ onBack }) {
 
     setSubmitting(true);
     try {
-      const res = await fetch('http://localhost:5000/reports', {
+      const res = await fetch(`${API_BASE}/reports`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

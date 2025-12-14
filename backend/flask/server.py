@@ -17,7 +17,11 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}})
+# Allow CORS origins to be configured via environment variable (comma-separated list)
+cors_env = os.getenv('CORS_ORIGINS', 'http://localhost:3000,https://BJMartin1025.github.io')
+cors_origins = [o.strip() for o in cors_env.split(',') if o.strip()]
+CORS(app, resources={r"/*": {"origins": cors_origins}}, supports_credentials=True)
+logger.info("CORS origins set: %s", cors_origins)
 
 # -----------------------
 # CONFIG
