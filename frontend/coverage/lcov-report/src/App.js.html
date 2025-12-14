@@ -376,7 +376,9 @@
 <a name='L311'></a><a href='#L311'>311</a>
 <a name='L312'></a><a href='#L312'>312</a>
 <a name='L313'></a><a href='#L313'>313</a>
-<a name='L314'></a><a href='#L314'>314</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L314'></a><a href='#L314'>314</a>
+<a name='L315'></a><a href='#L315'>315</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -698,6 +700,7 @@ import BugReportPage from './components/BugReportPage';
 import AccessibilityMenu from './components/AccessibilityMenu';
 import ToWatchList from './components/ToWatchList';
 import './styles/App.css'; // For basic styling
+import API_BASE from './api';
 &nbsp;
 function App() {
   const [movieName, setMovieName] = useState('');
@@ -714,7 +717,7 @@ function App() {
       const userId = localStorage.getItem('nextflix_user_id');
       <span class="missing-if-branch" title="else path not taken" >E</span>if (!userId) { setUserWatchlist([]); return; }
 <span class="cstat-no" title="statement not covered" >      try {</span>
-        const res = <span class="cstat-no" title="statement not covered" >await fetch(`http://localhost:5000/user/watchlist/${userId}`);</span>
+        const res = <span class="cstat-no" title="statement not covered" >await fetch(`${API_BASE}/user/watchlist/${userId}`);</span>
 <span class="cstat-no" title="statement not covered" >        if (res.ok) {</span>
           const d = <span class="cstat-no" title="statement not covered" >await res.json();</span>
 <span class="cstat-no" title="statement not covered" >          setUserWatchlist(d.watchlist || []);</span>
@@ -734,7 +737,7 @@ const handleRecommend = <span class="fstat-no" title="function not covered" >as<
 <span class="cstat-no" title="statement not covered" >  try {</span>
     const q = <span class="cstat-no" title="statement not covered" >query.trim();</span>
 <span class="cstat-no" title="statement not covered" >    if (searchType === 'director') {</span>
-      const url = <span class="cstat-no" title="statement not covered" >`http://localhost:5000/search?director=${encodeURIComponent(q)}`;</span>
+      const url = <span class="cstat-no" title="statement not covered" >`${API_BASE}/search?director=${encodeURIComponent(q)}`;</span>
       const res = <span class="cstat-no" title="statement not covered" >await fetch(url);</span>
       const json = <span class="cstat-no" title="statement not covered" >await res.json();</span>
 <span class="cstat-no" title="statement not covered" >      if (!res.ok) <span class="cstat-no" title="statement not covered" >throw new Error(json.error || "Director search failed");</span></span>
@@ -744,7 +747,7 @@ const handleRecommend = <span class="fstat-no" title="function not covered" >as<
     }
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    if (searchType === 'actor') {</span>
-      const url = <span class="cstat-no" title="statement not covered" >`http://localhost:5000/search?actor=${encodeURIComponent(q)}`;</span>
+      const url = <span class="cstat-no" title="statement not covered" >`${API_BASE}/search?actor=${encodeURIComponent(q)}`;</span>
       const res = <span class="cstat-no" title="statement not covered" >await fetch(url);</span>
       const json = <span class="cstat-no" title="statement not covered" >await res.json();</span>
 <span class="cstat-no" title="statement not covered" >      if (!res.ok) <span class="cstat-no" title="statement not covered" >throw new Error(json.error || "Actor search failed");</span></span>
@@ -753,7 +756,7 @@ const handleRecommend = <span class="fstat-no" title="function not covered" >as<
 <span class="cstat-no" title="statement not covered" >      return;</span>
     }
 <span class="cstat-no" title="statement not covered" >    if (searchType === 'genre') {</span>
-      const url = <span class="cstat-no" title="statement not covered" >`http://localhost:5000/search?genre=${encodeURIComponent(q)}`;</span>
+      const url = <span class="cstat-no" title="statement not covered" >`${API_BASE}/search?genre=${encodeURIComponent(q)}`;</span>
       const res = <span class="cstat-no" title="statement not covered" >await fetch(url);</span>
       const json = <span class="cstat-no" title="statement not covered" >await res.json();</span>
 <span class="cstat-no" title="statement not covered" >      if (!res.ok) <span class="cstat-no" title="statement not covered" >throw new Error(json.error || "Genre search failed");</span></span>
@@ -763,7 +766,7 @@ const handleRecommend = <span class="fstat-no" title="function not covered" >as<
     }
 &nbsp;
     const params = <span class="cstat-no" title="statement not covered" >new URLSearchParams({ title: q, top: recommendationCount });</span>
-    const response = <span class="cstat-no" title="statement not covered" >await fetch(`http://localhost:5000/similar?${params.toString()}`);</span>
+    const response = <span class="cstat-no" title="statement not covered" >await fetch(`${API_BASE}/similar?${params.toString()}`);</span>
 &nbsp;
     const data = <span class="cstat-no" title="statement not covered" >await response.json();</span>
 <span class="cstat-no" title="statement not covered" >    if (!response.ok) <span class="cstat-no" title="statement not covered" >throw new Error(data.error || "Title search failed");</span></span>
@@ -777,7 +780,7 @@ const handleRecommend = <span class="fstat-no" title="function not covered" >as<
         // r may be an object with movie_title or a string title
         const title = <span class="cstat-no" title="statement not covered" >(typeof r === 'string') ? r : (r.movie_title || r.title || '');</span>
 <span class="cstat-no" title="statement not covered" >        if (!title) <span class="cstat-no" title="statement not covered" >continue;</span></span>
-        const mres = <span class="cstat-no" title="statement not covered" >await fetch(`http://localhost:5000/movie?title=${encodeURIComponent(title)}`);</span>
+        const mres = <span class="cstat-no" title="statement not covered" >await fetch(`${API_BASE}/movie?title=${encodeURIComponent(title)}`);</span>
 <span class="cstat-no" title="statement not covered" >        if (mres.ok) {</span>
           const md = <span class="cstat-no" title="statement not covered" >await mres.json();</span>
 <span class="cstat-no" title="statement not covered" >          detailed.push(md.details || md);</span>
@@ -810,7 +813,7 @@ const handleRecommend = <span class="fstat-no" title="function not covered" >as<
 <span class="cstat-no" title="statement not covered" >    setError(null);</span>
 <span class="cstat-no" title="statement not covered" >    setRecommendations([]);</span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
-      const res = <span class="cstat-no" title="statement not covered" >await fetch('http://localhost:5000/recommend/user', {</span>
+      const res = <span class="cstat-no" title="statement not covered" >await fetch(`${API_BASE}/recommend/user`, {</span>
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: userId, top_n: recommendationCount })
@@ -825,7 +828,7 @@ const handleRecommend = <span class="fstat-no" title="function not covered" >as<
       const detailed = <span class="cstat-no" title="statement not covered" >[];</span>
 <span class="cstat-no" title="statement not covered" >      for (const t of titles.slice(0, recommendationCount)) {</span>
 <span class="cstat-no" title="statement not covered" >        try {</span>
-          const mres = <span class="cstat-no" title="statement not covered" >await fetch(`http://localhost:5000/movie?title=${encodeURIComponent(t)}`);</span>
+          const mres = <span class="cstat-no" title="statement not covered" >await fetch(`${API_BASE}/movie?title=${encodeURIComponent(t)}`);</span>
 <span class="cstat-no" title="statement not covered" >          if (mres.ok) {</span>
             const md = <span class="cstat-no" title="statement not covered" >await mres.json();</span>
             // server returns either {details: {...}} or full row
@@ -849,7 +852,7 @@ const handleRecommend = <span class="fstat-no" title="function not covered" >as<
 <span class="cstat-no" title="statement not covered" >    try {</span>
       const userId = <span class="cstat-no" title="statement not covered" >localStorage.getItem('nextflix_user_id') || null;</span>
       const payload = <span class="cstat-no" title="statement not covered" >{ user_id: userId, movie: recommendedMovie, rating, text: feedbackText };</span>
-      const res = <span class="cstat-no" title="statement not covered" >await fetch('http://localhost:5000/user/feedback', {</span>
+      const res = <span class="cstat-no" title="statement not covered" >await fetch(`${API_BASE}/user/feedback`, {</span>
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
       });
 <span class="cstat-no" title="statement not covered" >      if (!res.ok) {</span>
@@ -864,7 +867,7 @@ const handleRecommend = <span class="fstat-no" title="function not covered" >as<
     const userId = <span class="cstat-no" title="statement not covered" >localStorage.getItem('nextflix_user_id');</span>
 <span class="cstat-no" title="statement not covered" >    if (!userId) <span class="cstat-no" title="statement not covered" >return alert('No user profile found.');</span></span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
-      const res = <span class="cstat-no" title="statement not covered" >await fetch('http://localhost:5000/user/watchlist', {</span>
+      const res = <span class="cstat-no" title="statement not covered" >await fetch(`${API_BASE}/user/watchlist`, {</span>
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: userId, movie: movieTitle })
       });
 <span class="cstat-no" title="statement not covered" >      if (res.ok) {</span>
@@ -885,7 +888,7 @@ const handleRecommend = <span class="fstat-no" title="function not covered" >as<
     const userId = <span class="cstat-no" title="statement not covered" >localStorage.getItem('nextflix_user_id');</span>
 <span class="cstat-no" title="statement not covered" >    if (!userId) <span class="cstat-no" title="statement not covered" >return alert('No user profile found.');</span></span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
-      const res = <span class="cstat-no" title="statement not covered" >await fetch('http://localhost:5000/user/watchlist/remove', {</span>
+      const res = <span class="cstat-no" title="statement not covered" >await fetch(`${API_BASE}/user/watchlist/remove`, {</span>
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: userId, movie: movieTitle })
       });
 <span class="cstat-no" title="statement not covered" >      if (res.ok) {</span>
@@ -909,7 +912,7 @@ const handleRecommend = <span class="fstat-no" title="function not covered" >as<
     const userId = <span class="cstat-no" title="statement not covered" >localStorage.getItem('nextflix_user_id');</span>
 <span class="cstat-no" title="statement not covered" >    if (!userId) <span class="cstat-no" title="statement not covered" >return alert('No user profile found.');</span></span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
-      const res = <span class="cstat-no" title="statement not covered" >await fetch('http://localhost:5000/user/favorites', {</span>
+      const res = <span class="cstat-no" title="statement not covered" >await fetch(`${API_BASE}/user/favorites`, {</span>
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: userId, movie: movieTitle })
       });
 <span class="cstat-no" title="statement not covered" >      if (res.ok) {</span>
@@ -922,7 +925,7 @@ const handleRecommend = <span class="fstat-no" title="function not covered" >as<
     const userId = <span class="cstat-no" title="statement not covered" >localStorage.getItem('nextflix_user_id');</span>
 <span class="cstat-no" title="statement not covered" >    if (!userId) <span class="cstat-no" title="statement not covered" >return alert('No user profile found.');</span></span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
-      const res = <span class="cstat-no" title="statement not covered" >await fetch('http://localhost:5000/user/seen', {</span>
+      const res = <span class="cstat-no" title="statement not covered" >await fetch(`${API_BASE}/user/seen`, {</span>
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: userId, movie: movieTitle })
       });
 <span class="cstat-no" title="statement not covered" >      if (res.ok) {</span>
@@ -1009,7 +1012,7 @@ export default App;</pre></td></tr></table></pre>
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-12-13T21:52:37.267Z
+                at 2025-12-14T01:39:52.930Z
             </div>
         <script src="../prettify.js"></script>
         <script>
