@@ -59,6 +59,10 @@ jobs:
           CI: 'false'
         run: npm run build
 
+      - name: List build output
+        run: |
+          echo "Listing build directory content:" && ls -la frontend/build || true
+
       - name: Deploy to GitHub Pages (publish to gh-pages branch)
         uses: peaceiris/actions-gh-pages@v3
         with:
@@ -67,3 +71,20 @@ jobs:
           publish_branch: gh-pages
           # Keep history minimal
           force_orphan: true
+
+      - name: Confirm gh-pages branch exists and report status
+        run: |
+          echo "Checking remote gh-pages branch..."
+          git ls-remote --heads origin gh-pages || echo "gh-pages not found on remote"
+          echo "Checking published site URL (may need a few moments for Pages to publish)..."
+          owner=${{ github.repository_owner }}
+          repo=${{ github.event.repository.name }}
+          url="https://$owner.github.io/$repo/"
+          echo "URL: $url"
+          status=$(curl -s -o /dev/null -w "%{http_code}" "$url" || true)
+          echo "HTTP status code: $status"
+          if [ "$status" != "200" ]; then
+            echo "Published site did not return 200. If the Pages site was just created, wait a few minutes and check again."
+            # Show headers for debugging
+            curl -I -s "$url" || true
+          fi
