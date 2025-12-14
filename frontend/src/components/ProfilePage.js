@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import API_BASE from '../api';
 import '../styles/UserPreferenceInputForm.css';
 
 function ProfilePage({ onBack }) {
@@ -29,7 +30,7 @@ function ProfilePage({ onBack }) {
     // fetch catalog options for constrained inputs
     const fetchOptions = async () => {
       try {
-        const res = await fetch('http://localhost:5000/catalog/options');
+        const res = await fetch(`${API_BASE}/catalog/options`);
         if (!res.ok) return;
         const data = await res.json();
         setOptions(data);
@@ -44,8 +45,8 @@ function ProfilePage({ onBack }) {
     setLoading(true);
     try {
       const [prefRes, fbRes] = await Promise.all([
-        fetch(`http://localhost:5000/user/preferences/${id}`),
-        fetch(`http://localhost:5000/user/feedback/${id}`),
+        fetch(`${API_BASE}/user/preferences/${id}`),
+        fetch(`${API_BASE}/user/feedback/${id}`),
       ]);
 
       if (prefRes.ok) {
@@ -151,7 +152,7 @@ function ProfilePage({ onBack }) {
 
     setSaving(true);
     try {
-      const res = await fetch('http://localhost:5000/user/preferences', {
+      const res = await fetch(`${API_BASE}/user/preferences`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -199,7 +200,7 @@ function ProfilePage({ onBack }) {
     };
 
     try {
-      const res = await fetch('http://localhost:5000/user/feedback', {
+      const res = await fetch(`${API_BASE}/user/feedback`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

@@ -192,15 +192,8 @@ Notes on frontend dependency install:
    - If `frontend/package.json` does not exist, the workflow falls back to `npm install` — this avoids the `npm ci` exit code 1 error.
 
 Notes:
-- No additional repository secrets are required for GitHub Pages deployment—the workflow uses the built-in `GITHUB_TOKEN` to perform the Pages deployment.
+- No additional repository secrets are required for GitHub Pages deployment, as the workflow uses the built-in `GITHUB_TOKEN` to perform the Pages deployment.
 - The CD workflow will still run tests and builds even if Pages deployment is disabled in repository settings; you can enable/disable Pages in the repository's GitHub settings as needed.
-
-Permissions & Troubleshooting:
-- GitHub Actions uses the `GITHUB_TOKEN` to push the generated build to the `gh-pages` branch.
-- Ensure repository Actions settings allow workflows to write to the repository:
-   1. Go to `Settings` → `Actions` → `General` and select **Read and write permissions** for workflows.
-   2. When using branch protection rules on `gh-pages`, allow GitHub Actions to bypass restrictions or adjust rules accordingly.
-   3. If your repository is a fork, `GITHUB_TOKEN` lacks write permission by default — configure a Personal Access Token (PAT) with `repo` scope and set it as a secret `GH_PAGES_TOKEN`, and change the workflow to use it.
 
 ### Frontend (Jest) Tests
 

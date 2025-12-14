@@ -57,20 +57,25 @@ jobs:
         working-directory: frontend
         env:
           CI: 'false'
+          REACT_APP_API_URL: ${{ secrets.PRODUCTION_API_URL }}
         run: npm run build
 
       - name: List build output
         run: |
           echo "Listing build directory content:" && ls -la frontend/build || true
 
-      - name: Deploy to GitHub Pages (publish to gh-pages branch)
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Upload build for GitHub Pages
+        uses: actions/upload-pages-artifact@v1
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./frontend/build
-          publish_branch: gh-pages
-          # Keep history minimal
-          force_orphan: true
+          path: frontend/build
+
+  deploy-pages:
+    name: Publish to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    steps:
+      - name: Deploy to GitHub Pages using official action
+        uses: actions/deploy-pages@v1
 
       - name: Confirm gh-pages branch exists and report status
         run: |

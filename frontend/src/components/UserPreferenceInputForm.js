@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import API_BASE from '../api';
 // CORRECT PATH: Go up one level (to src), then into the styles folder
 import '../styles/UserPreferenceInputForm.css';
 
@@ -38,7 +39,7 @@ function UserPreferenceInputForm({ onBackClick }) {
     // fetch available options (movies, directors, actors, genres) from backend CSV
     const fetchOptions = async () => {
       try {
-        const res = await fetch('http://localhost:5000/catalog/options');
+        const res = await fetch(`${API_BASE}/catalog/options`);
         if (!res.ok) return;
         const data = await res.json();
         setOptions(data);
@@ -124,7 +125,7 @@ function UserPreferenceInputForm({ onBackClick }) {
     console.log('Submitting Preferences:', payload);
     setSaving(true);
     try {
-      const res = await fetch('http://localhost:5000/user/preferences', {
+      const res = await fetch(`${API_BASE}/user/preferences`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
